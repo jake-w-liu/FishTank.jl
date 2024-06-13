@@ -20,7 +20,7 @@ function _create_fish(pos, color="", opc=1)
     c = 1 / fac
 
     body = ellipsoids(pos, [a, b, c], color, opc, 6, 15)
-    tail = polygons([[-0.5*a, 0.0, 0.0].+pos, [-2*a, 0.0, -1.5*b].+pos, [-2*a, 0.0, 1.5*b].+pos], color, 0.8)
+    tail = polygons([[-0.5*a, 0.0, 0.0].+pos, [-2*a, 0.0, -1.5*b].+pos, [-2*a, 0.0, 1.5*b].+pos], color, opc*0.8)
 
     fish = Fish(body, tail, pos, [1, 0, 0])
 

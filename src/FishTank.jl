@@ -44,12 +44,15 @@ function main(color="")
         ),
         height=400,
         width=400,
+        # minreducedwidth=400,
+        # minreducedheight=400,
         margin=attr(
             l=45, 
             r=0, 
             b=15,
             t=0, 
         ),
+        autosize=true,
     )
     
     # fish initialization
@@ -107,9 +110,9 @@ function main(color="")
             
             t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
             sleep(0.05)   
+            wait(t1)
             t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
             sleep(0.05)   
-            wait(t1)
             wait(t2)
 
             _check_eat!(food, fish, 1E-1)
@@ -143,9 +146,10 @@ end
 
 function _check_eat!(food, fish, eps)
     tmp = []
+    mouth_pos = fish.pos .+ 0.06.*fish.dir
     if food.num != 0
         @inbounds for n in eachindex(food.num) 
-            if abs2(fish.pos[1]-food.pts.x[n]) + abs2(fish.pos[2]-food.pts.y[n]) + abs2(fish.pos[3].-food.pts.z[n]) < eps
+            if abs2(mouth_pos[1]-food.pts.x[n]) + abs2(mouth_pos[2]-food.pts.y[n]) + abs2(mouth_pos[3].-food.pts.z[n]) < eps^2
                 push!(tmp, n)  
                 food.num -= 1
                 if sound[]
@@ -158,7 +162,7 @@ function _check_eat!(food, fish, eps)
             end
         end
     end
-    
+
     if length(tmp) != 0
         deleteat!(food.pts.x, tmp)
         deleteat!(food.pts.y, tmp)  

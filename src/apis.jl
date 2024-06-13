@@ -44,7 +44,8 @@ function add(n::Int=10)
         x=[food.pts.x; x], y=[food.pts.y; y], z=[food.pts.z; z],
         mode="markers",
         marker=attr(
-            size=1
+            size=1,
+            color="red",
         )
     )
     return nothing

@@ -5,7 +5,7 @@
 `FishTank.jl` creates an e-fish for you in case you feel lonely when you are coding. The game is visualized using [`PlotlyJS.jl`](https://github.com/JuliaPlots/PlotlyJS.jl) and [`PlotlyGeometries.jl`](https://github.com/akjake616/PlotlyGeometries.jl).
 
 <p align="center">
-  <img alt="FishTank.jl" src="./media/fish-tank.gif" width="40%" height="auto" />
+  <img alt="FishTank.jl" src="./media/fish-tank.gif" width="50%" height="auto" />
 </p>
 
 ## Installation
