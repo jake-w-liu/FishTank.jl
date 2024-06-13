@@ -18,7 +18,7 @@ function _create_food(n::Int)
         mode="markers",
         marker=attr(
             size=1,
-            color="red",
+            color="#B22222",
         )
     )
     food = Food(n, pts, zd)

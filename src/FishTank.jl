@@ -6,6 +6,8 @@ using PlotlyJS
 using PlotlyGeometries
 using Distributions
 using BeepBeep
+using MeshGrid
+using FFTW
 using Infiltrator
 
 include("fish_fn.jl")
@@ -33,40 +35,39 @@ function main(color="")
             zaxis=attr(
                 visible=false,
                 showgrid=false
-            ),   
+            ),
         ),
-        scene_camera= attr(
-                eye=attr(x=1.75, y=1.25, z=0.6)
-         ),
+        scene_camera=attr(
+            eye=attr(x=1.75, y=1.25, z=0.6)
+        ),
         uirevision=true,
         transition=attr(
             easing="quad-in-out",
         ),
         height=400,
         width=400,
-        # minreducedwidth=400,
-        # minreducedheight=400,
         margin=attr(
-            l=45, 
-            r=0, 
+            l=45,
+            r=0,
             b=15,
-            t=0, 
+            t=0,
         ),
-        autosize=true,
     )
-    
+
     # fish initialization
     pos = rand(3) .* 0.5 .+ 0.25
-    ang = zeros(3) 
+    ang = zeros(3)
 
     v_init = 0.03
     v = fill(v_init, 3)
 
     fish = _create_fish(pos, color)
-    world = [tank, fish.body, fish.tail, food.pts]
+    zmax, landscape = _create_landscape()
+    world = [tank, fish.body, fish.tail, food.pts, landscape]
 
     fig = plot(world, layout)
     display(fig)
+    sleep(0.1)
 
     cz = 1
     cy = 1
@@ -74,8 +75,11 @@ function main(color="")
     count = 0
     reset_num = 3600
 
-    while true 
+    GC.gc()  
+
+    while true
         if sound[]
+            sleep(1)
             beep("facebook")
         end
 
@@ -83,7 +87,7 @@ function main(color="")
             # give random angle
             cy = cy * sign(rand(Normal(0.5, 0.5)))
             cz = cz * sign(rand(Normal(0.5, 0.5)))
-            
+
             # ang_cz = sign(rand(Normal(0.5, 1)))
             ang[1] = rand() .* 1 .- 0.5
             ang[2] = rand() .* 2 .* cy
@@ -106,25 +110,25 @@ function main(color="")
                 end
             end
 
-            _update_fish!(fish, v, ang)
-            
+            _update_fish!(fish, v, ang, zmax)
+
             t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-            sleep(0.05)   
+            sleep(0.05)
             wait(t1)
             t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
-            sleep(0.05)   
+            sleep(0.1)
             wait(t2)
 
             _check_eat!(food, fish, 1E-1)
             _update_food!(food, v_init)
-            t3 = @async restyle!(fig, 4,  x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
-            sleep(0.05)  
+            t3 = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
+            sleep(0.05)
             wait(t3)
 
             count += 1
             if count >= reset_num # sleep for a while
                 pause()
-                sleep(floor(rand()*5) + 1)
+                sleep(floor(rand() * 5) + 1)
                 go()
                 count = 0
                 reset_num = 3600 + rand(-100:100)
@@ -146,11 +150,11 @@ end
 
 function _check_eat!(food, fish, eps)
     tmp = []
-    mouth_pos = fish.pos .+ 0.06.*fish.dir
+    mouth_pos = fish.pos .+ 0.06 .* fish.dir
     if food.num != 0
-        @inbounds for n in eachindex(food.num) 
-            if abs2(mouth_pos[1]-food.pts.x[n]) + abs2(mouth_pos[2]-food.pts.y[n]) + abs2(mouth_pos[3].-food.pts.z[n]) < eps^2
-                push!(tmp, n)  
+        @inbounds for n in eachindex(food.num)
+            if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
+                push!(tmp, n)
                 food.num -= 1
                 if sound[]
                     if food.num != 0
@@ -165,10 +169,33 @@ function _check_eat!(food, fish, eps)
 
     if length(tmp) != 0
         deleteat!(food.pts.x, tmp)
-        deleteat!(food.pts.y, tmp)  
+        deleteat!(food.pts.y, tmp)
         deleteat!(food.pts.z, tmp)
         deleteat!(food.zd, tmp)
     end
+end
+
+function _create_landscape()
+    x = -0.05:0.11:1.05
+    y = -0.05:0.11:1.05
+
+    Y, X = meshgrid(y, x)
+    H = exp.(-15 * ((X.-0.5) .^ 2 + (Y.-0.5) .^ 2))
+    Z = real.(ifft(H .* fft(rand(length(y),length(x)))))
+    Z[Z.<0] .= 0
+    Z0 = similar(Z)
+    fill!(Z0, -0.05)
+
+    return maximum(Z), mesh3d(x=[X[:]; X[:]], y=[Y[:]; Y[:]], z=[Z[:]; Z0[:]],
+        alphahull=0,
+        color="#CBBD93",
+        opacity=1,
+        lighting=attr(
+            diffuse=0.1,
+            specular=1.2,
+            roughness=1.0,
+        ),
+    )
 end
 
 end

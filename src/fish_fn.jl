@@ -27,7 +27,7 @@ function _create_fish(pos, color="", opc=1)
     return fish
 end
 
-function _update_fish!(fish, v, ang)
+function _update_fish!(fish, v, ang, zmax)
 
     eps = 0.075
     alpha = ang[1]
@@ -85,7 +85,7 @@ function _update_fish!(fish, v, ang)
             fish.tail.y[n] = -(fish.tail.y[n] - fish.pos[2]) + fish.pos[2]
         end
     end
-    if (abs(fish.pos[3]) < eps && fish.dir[3] < 0) || (abs(fish.pos[3] - 1) < eps && fish.dir[3] > 0)
+    if (abs(fish.pos[3]-zmax) < eps && fish.dir[3] < 0) || (abs(fish.pos[3] - 1) < eps && fish.dir[3] > 0)
         fish.dir[3] = -fish.dir[3]
         @inbounds for n in eachindex(fish.body.x)
             fish.body.z[n] = -(fish.body.z[n] - fish.pos[3]) + fish.pos[3]
