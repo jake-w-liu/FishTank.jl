@@ -1,23 +1,24 @@
 module FishTank
 
-export init, pause, go, mute, unmute, check, add
+export init, pause, go, mute, unmute, check, add, showup
 
 using PlotlyJS
 using PlotlyGeometries
 using Distributions
 using BeepBeep
-using MeshGrid
+using Infiltrator
 
 include("fish_fn.jl")
 include("food_fn.jl")
 include("apis.jl")
 
+const lock = Ref(false)
 const running = Ref(true)
 const sound = Ref(true)
-const food = create_food(0)
+const replot = Ref(false)
+const food = _create_food(0)
 
 function main(color="")
-    
     # tank initialzation
     tank = cubes([0.5, 0.5, 0.5], [1.1, 1.1, 1.1], "white", 0.2)
     layout = Layout(scene=attr(
@@ -53,13 +54,12 @@ function main(color="")
     
     # fish initialization
     pos = rand(3) .* 0.5 .+ 0.25
-    ang = rand(3) .* 180
-    ang[1] = 0.0
+    ang = zeros(3) 
 
     v_init = 0.03
     v = fill(v_init, 3)
 
-    fish = create_fish(pos, ang, color)
+    fish = _create_fish(pos, color)
     world = [tank, fish.body, fish.tail, food.pts]
 
     fig = plot(world, layout)
@@ -72,13 +72,11 @@ function main(color="")
     reset_num = 3600
 
     while true 
-
         if sound[]
             beep("facebook")
         end
 
         while running[]
-
             # give random angle
             cy = cy * sign(rand(Normal(0.5, 0.5)))
             cz = cz * sign(rand(Normal(0.5, 0.5)))
@@ -105,28 +103,35 @@ function main(color="")
                 end
             end
 
-            update_fish!(fish, v, ang)
+            _update_fish!(fish, v, ang)
             
             t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-            wait(t1)
             sleep(0.05)   
             t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
+            sleep(0.05)   
+            wait(t1)
             wait(t2)
-            sleep(0.1)   
 
-            check_eat!(food, fish, 1E-1)
-            update_food!(food, v_init)
+            _check_eat!(food, fish, 1E-1)
+            _update_food!(food, v_init)
             t3 = @async restyle!(fig, 4,  x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
-            wait(t3)
             sleep(0.05)  
+            wait(t3)
 
             count += 1
             if count >= reset_num # sleep for a while
                 pause()
-                sleep(floor(rand()*3) + 1)
+                sleep(floor(rand()*5) + 1)
                 go()
                 count = 0
                 reset_num = 3600 + rand(-100:100)
+            end
+
+            if replot[]
+                fig = plot(world, layout)
+                display(fig)
+                sleep(1)
+                replot[] = false
             end
         end
 
@@ -136,11 +141,11 @@ function main(color="")
     end
 end
 
-function check_eat!(food, fish, eps)
+function _check_eat!(food, fish, eps)
     tmp = []
     if food.num != 0
         @inbounds for n in eachindex(food.num) 
-            if abs2(fish.pos[1]-food.pts.x[n]) + abs2(fish.pos[2]-food.pts.y[n]) + abs2(fish.pos[3].-food.pts.z[n]) < eps^2
+            if abs2(fish.pos[1]-food.pts.x[n]) + abs2(fish.pos[2]-food.pts.y[n]) + abs2(fish.pos[3].-food.pts.z[n]) < eps
                 push!(tmp, n)  
                 food.num -= 1
                 if sound[]

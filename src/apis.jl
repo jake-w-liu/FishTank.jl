@@ -1,21 +1,31 @@
 function init(color::String="")
-    @async main(color)
+    if !lock[]
+        lock[] = true
+        @async main(color)
+    else
+        println("Fish tank already initialized.")
+    end
+    return nothing
 end
 
 function pause()
     running[] = false
+    return nothing
 end
 
 function go()
     running[] = true
+    return nothing
 end
 
 function mute()
     sound[] = false
+    return nothing
 end
 
 function unmute()
     sound[] = true
+    return nothing
 end
 
 function add(n::Int=10)
@@ -42,4 +52,9 @@ end
 
 function check()
     return food.num
+end
+
+function showup()
+    replot[] = true
+    return nothing
 end

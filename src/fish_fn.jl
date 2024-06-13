@@ -5,7 +5,7 @@ mutable struct Fish
     dir::Vector
 end
 
-function create_fish(pos, ang, color="", opc=1)
+function _create_fish(pos, color="", opc=1)
 
     if color == ""
         r = round(Int, rand()*255)
@@ -15,91 +15,19 @@ function create_fish(pos, ang, color="", opc=1)
     end
 
     fac = 50
-
     a = 3 / fac
     b = 0.8 / fac
     c = 1 / fac
 
-    alpha = ang[1]
-    beta = ang[2]
-    gama = ang[3]
+    body = ellipsoids(pos, [a, b, c], color, opc, 6, 15)
+    tail = polygons([[-0.5*a, 0.0, 0.0].+pos, [-2*a, 0.0, -1.5*b].+pos, [-2*a, 0.0, 1.5*b].+pos], color, 0.8)
 
-    Rx = [1 0 0;
-        0 cosd(alpha) -sind(alpha);
-        0 sind(alpha) cosd(alpha)]
-    Ry = [cosd(beta) 0 sind(beta);
-        0 1 0;
-        -sind(beta) 0 cosd(beta)]
-    Rz = [cosd(gama) -sind(gama) 0;
-        sind(gama) cosd(gama) 0;
-        0 0 1]
+    fish = Fish(body, tail, pos, [1, 0, 0])
 
-    R = Rx * Ry * Rz
-
-    dir = R * [1, 0, 0]
-
-    # create points
-    P, T = meshgrid(
-        LinRange(0, 360, 15),
-        LinRange(0, 180, 6)
-    )
-
-    x = sind.(T) .* cosd.(P) .* a
-    y = sind.(T) .* sind.(P) .* b
-    z = cosd.(T) .* c
-    x = x[:]
-    y = y[:]
-    z = z[:]
-
-    @inbounds for n in eachindex(x)
-        vec = [x[n], y[n], z[n]]
-        vec = R * vec + pos
-        x[n] = vec[1]
-        y[n] = vec[2]
-        z[n] = vec[3]
-    end
-
-    body = mesh3d(x=x, y=y, z=z,
-        alphahull=0,
-        flatshading=true,
-        color=color,
-        opacity=opc,
-        lighting=attr(
-            diffuse=0.1,
-            specular=2.0,
-            roughness=0.5
-        ),
-    )
-
-    xt = [-0.5*a, -2*a, -2*a]
-    yt = [0.0, 0.0, 0.0]
-    zt = [0.0, -1.5*b, 1.5*b]
-
-    @inbounds for n in 1:3
-        vec = [xt[n], yt[n], zt[n]]
-        vec = R * vec + pos
-        xt[n] = vec[1]
-        yt[n] = vec[2]
-        zt[n] = vec[3]
-    end
-
-    tail = mesh3d(x=xt, y=yt, z=zt,
-        i = [0], j = [1], k = [2],
-        alphahull=0,
-        flatshading=true,
-        color=color,
-        opacity=opc*0.8,
-        lighting=attr(
-            diffuse=0.1,
-            specular=2.0,
-            roughness=0.5
-        ),
-    )
-    fish = Fish(body, tail, pos, dir)
     return fish
 end
 
-function update_fish!(fish, v, ang)
+function _update_fish!(fish, v, ang)
 
     eps = 0.075
     alpha = ang[1]

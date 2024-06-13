@@ -4,7 +4,7 @@ mutable struct Food
     zd::Vector
 end
 
-function create_food(n::Int)
+function _create_food(n::Int)
     @assert n >= 0
 
     x = rand(n) .* 0.8 .+ 0.1
@@ -25,7 +25,7 @@ function create_food(n::Int)
     return food
 end
 
-function update_food!(food, v)
+function _update_food!(food, v)
     @inbounds for n in eachindex(food.pts.z)
         food.pts.z[n] -= v *  (food.pts.z[n] - food.zd[n])
     end

@@ -5,9 +5,8 @@
 `FishTank.jl` creates an e-fish for you in case you feel lonely when you are coding. The game is visualized using [`PlotlyJS.jl`](https://github.com/JuliaPlots/PlotlyJS.jl) and [`PlotlyGeometries.jl`](https://github.com/akjake616/PlotlyGeometries.jl).
 
 <p align="center">
-  <img alt="VoxelModel.jl" src="./media/fish-tank.gif" width="40%" height="auto" />
+  <img alt="FishTank.jl" src="./media/fish-tank.gif" width="40%" height="auto" />
 </p>
-
 
 ## Installation
 
@@ -43,7 +42,7 @@ ___
 ```julia
 init(color::String)
 ```
-Initialization of the fish and tank. The fish is specified with the color=`color`. If `color` is not specified, the color of the fish is set to be random.
+Initialization of the fish and tank. The fish is specified with the color=`color`. If `color` is not specified, the color of the fish is set to be random. Currently only one fish tank can be initialized per process.
 
 ___
 
@@ -81,6 +80,13 @@ ___
 check()
 ```
 Check the number of grains.
+
+___
+
+```julia
+showup()
+```
+Show up the fish tank window (if it is accidentally closed).
 
 ___
 
