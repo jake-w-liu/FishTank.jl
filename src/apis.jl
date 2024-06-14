@@ -55,6 +55,12 @@ function check()
     return food.num
 end
 
+function plant()
+    push!(weedList, _create_weed())
+    weedCount[] += 1
+    return nothing
+end
+
 function showup()
     replot[] = true
     return nothing

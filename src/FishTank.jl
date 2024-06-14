@@ -1,6 +1,6 @@
 module FishTank
 
-export init, pause, go, mute, unmute, check, add, showup
+export init, pause, go, mute, unmute, check, add, plant, showup
 
 using PlotlyJS
 using PlotlyGeometries
@@ -8,10 +8,12 @@ using Distributions
 using BeepBeep
 using MeshGrid
 using FFTW
+using LinearAlgebra
 using Infiltrator
 
 include("fish_fn.jl")
 include("food_fn.jl")
+include("weed_fn.jl")
 include("apis.jl")
 
 const lock = Ref(false)
@@ -19,6 +21,8 @@ const running = Ref(true)
 const sound = Ref(true)
 const replot = Ref(false)
 const food = _create_food(0)
+const weedList = Vector{Weed}()
+const weedCount = Ref(0)
 
 function main(color="")
     # tank initialzation
@@ -75,11 +79,11 @@ function main(color="")
     count = 0
     reset_num = 3600
 
-    GC.gc()  
+    GC.gc()
 
     while true
         if sound[]
-            sleep(1)
+            sleep(0.1)
             beep("facebook")
         end
 
@@ -103,10 +107,10 @@ function main(color="")
                 v[n] = v_init * factor
 
                 if n == 1 || n == 2
-                    ang[3] = ang[3] * sqrt((factor + 1)) # factor map to 1-2
+                    ang[3] *= sqrt((factor + 1)) # factor map to 1-2
                 end
                 if n == 3
-                    ang[2] = ang[2] * (factor + 1)
+                    ang[2] *= (factor + 1)
                 end
             end
 
@@ -125,6 +129,22 @@ function main(color="")
             sleep(0.05)
             wait(t3)
 
+            if length(fig.plot.data) - 5 < weedCount[]
+                for n in length(fig.plot.data) - 4 : weedCount[] 
+                    addtraces!(fig, weedList[n].body)
+                    sleep(0.01)
+                end
+            end
+
+            _update_weed!(weedList)
+
+            for n in eachindex(weedList)
+                t = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
+                sleep(0.01)
+                wait(t)
+                # println(length(fig.plot.data))
+            end
+
             count += 1
             if count >= reset_num # sleep for a while
                 pause()
@@ -140,6 +160,8 @@ function main(color="")
                 sleep(1)
                 replot[] = false
             end
+
+            
         end
 
         while !running[]
@@ -180,8 +202,8 @@ function _create_landscape()
     y = -0.05:0.11:1.05
 
     Y, X = meshgrid(y, x)
-    H = exp.(-15 * ((X.-0.5) .^ 2 + (Y.-0.5) .^ 2))
-    Z = real.(ifft(H .* fft(rand(length(y),length(x)))))
+    H = exp.(-15 * ((X .- 0.5) .^ 2 + (Y .- 0.5) .^ 2))
+    Z = real.(ifft(H .* fft(rand(length(y), length(x)))))
     Z[Z.<0] .= 0
     Z0 = similar(Z)
     fill!(Z0, -0.05)
@@ -197,6 +219,8 @@ function _create_landscape()
         ),
     )
 end
+
+
 
 end
 
