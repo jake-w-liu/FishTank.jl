@@ -77,9 +77,7 @@ function main(color="")
     cy = 1
 
     count = 0
-    reset_num = 3600
-
-    GC.gc()
+    reset_num = 666
 
     while true
         if sound[]
@@ -125,6 +123,7 @@ function main(color="")
 
             _check_eat!(food, fish, 1E-1)
             _update_food!(food, v_init)
+
             t3 = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
             sleep(0.05)
             wait(t3)
@@ -142,16 +141,15 @@ function main(color="")
                 t = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
                 sleep(0.01)
                 wait(t)
-                # println(length(fig.plot.data))
             end
 
             count += 1
-            if count >= reset_num # sleep for a while
-                pause()
-                sleep(floor(rand() * 5) + 1)
-                go()
+            if count >= reset_num # reset
+                # pause()
+                sleep(1)
+                # go()
                 count = 0
-                reset_num = 3600 + rand(-100:100)
+                # reset_num = 3600 + rand(-100:100)
             end
 
             if replot[]

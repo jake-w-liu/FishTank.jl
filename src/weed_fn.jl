@@ -1,6 +1,6 @@
 mutable struct Weed
     body::PlotlyJS.GenericTrace
-    dir::Vector
+    pos::Vector
 end
 
 function _create_weed()
@@ -11,21 +11,22 @@ function _create_weed()
     yc = 0.8 * rand() + 0.1
 
     pts = []
+    push!(pts, [xc, yc, 0])
     for n in eachindex(z)
-        push!(pts, [xc + 0.05 *(rand() - 0.025), yc + 0.05 *(rand() - 0.025), z[n]])
+        push!(pts, [xc + rand() * 0.02, yc + rand() * 0.02, z[n]])
     end
-
+    push!(pts, [xc, yc, h])
     for n in reverse(eachindex(z))
-        push!(pts, [xc + 0.05 *(rand() - 0.025), yc + 0.05 *(rand() - 0.025), z[n]])
+        push!(pts, [xc - rand() * 0.02, yc - rand() * 0.02, z[n]])
     end
 
     # base color: HIWAMOEGI
     r = round(Int, 144 + rand()*4) 
     g = round(Int, 180 + rand()*5)
-    b = round(Int, 75 + rand()*3)
+    b = round(Int,  75 + rand()*3)
     color = "rgb($r, $g, $b)"
 
-    weed = Weed(polygons(pts, color, 0.6), [0.0, 0.0, 1.0])
+    weed = Weed(polygons(pts, color, 0.6), pts)
 
     return weed
 end
@@ -33,13 +34,13 @@ end
 function _update_weed!(weedList)
 
     for w in weedList
-        w.dir[1] = (rand()-0.5)*0.02
-        w.dir[2] = (rand()-0.5)*0.02
-        w.dir .= w.dir./norm(w.dir)
 
-        for n in eachindex(w.body.z)
-            w.body.x[n] += w.body.z[n]* w.dir[1] 
-            w.body.y[n] += w.body.z[n]* w.dir[2] 
+        for n in eachindex(w.pos)
+            dx = rand(Normal(0.0, 0.01)) * w.body.z[n]
+            dy = rand(Normal(0.0, 0.01)) * w.body.z[n]
+
+            w.body.x[n] = w.pos[n][1] + dx
+            w.body.y[n] = w.pos[n][2] + dy
         end
     end
 
