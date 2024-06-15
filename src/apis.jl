@@ -45,7 +45,7 @@ function add(n::Int=10)
         mode="markers",
         marker=attr(
             size=1,
-            color="#B22222",
+            color="#8E354A", # SUOH
         )
     )
     return nothing

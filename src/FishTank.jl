@@ -210,7 +210,8 @@ function _create_landscape()
 
     return maximum(Z), mesh3d(x=[X[:]; X[:]], y=[Y[:]; Y[:]], z=[Z[:]; Z0[:]],
         alphahull=0,
-        color="#CBBD93",
+        # color="#CBBD93",
+        color="#ECB88A"; # USUGAKI
         opacity=1,
         lighting=attr(
             diffuse=0.1,

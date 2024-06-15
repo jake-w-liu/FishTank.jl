@@ -19,9 +19,10 @@ function _create_weed()
         push!(pts, [xc + 0.05 *(rand() - 0.025), yc + 0.05 *(rand() - 0.025), z[n]])
     end
 
-    r = round(Int, 137 + rand()*1)
-    g = round(Int, 243 + rand()*3)
-    b = round(Int, 54 + rand()*2)
+    # base color: HIWAMOEGI
+    r = round(Int, 144 + rand()*4) 
+    g = round(Int, 180 + rand()*5)
+    b = round(Int, 75 + rand()*3)
     color = "rgb($r, $g, $b)"
 
     weed = Weed(polygons(pts, color, 0.6), [0.0, 0.0, 1.0])

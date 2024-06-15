@@ -1,6 +1,6 @@
 # FishTank.jl
 
-[![Build Status](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml/badge.svg?branch=master)](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml?query=branch%3Amaster)
+[![Build Status](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml)
 
 `FishTank.jl` creates an e-fish for you in case you feel lonely when you are coding. The game is visualized using [`PlotlyJS.jl`](https://github.com/JuliaPlots/PlotlyJS.jl) and [`PlotlyGeometries.jl`](https://github.com/akjake616/PlotlyGeometries.jl).
 
@@ -30,6 +30,11 @@ To feed the fish with, for example, six grains, call the following:
 
 ```julia 
 add(6) # add 6 grains to the fish tank, if the input is not specified, 10 grains are added
+```
+
+Finally, call the following to decorate the fish tank with waterweed:
+```julia 
+plant() # randomly plant one waterweed bunble
 ```
 
 Enjoy! :angel:
@@ -80,6 +85,13 @@ ___
 check()
 ```
 Check the number of grains.
+
+___
+
+```julia
+plant()
+```
+Plant waterweed.
 
 ___
 
