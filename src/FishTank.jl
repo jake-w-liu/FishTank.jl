@@ -115,7 +115,7 @@ function main(color="")
             _update_fish!(fish, v, ang, zmax)
 
             t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-            sleep(0.1)
+            sleep(0.05)
             wait(t1)
             t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
             sleep(0.1)
@@ -140,10 +140,11 @@ function main(color="")
             _update_weed!(weedList)
 
             for n in eachindex(weedList)
-
-                t = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
-                sleep(0.1)
-                wait(t)
+                if rand(Bool)
+                    t = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
+                    sleep(0.01)
+                    wait(t)
+                end
             end
 
             count += 1
