@@ -9,7 +9,6 @@ using BeepBeep
 using MeshGrid
 using FFTW
 using LinearAlgebra
-using Infiltrator
 
 include("fish_fn.jl")
 include("food_fn.jl")

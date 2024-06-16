@@ -1,8 +1,9 @@
 push!(LOAD_PATH, ".")
 using FishTank
 
+# basic usage
 init()
-add(10)
-for n = 1:10
+add()
+for n = 1:5
     plant()
 end
