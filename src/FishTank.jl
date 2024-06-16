@@ -115,7 +115,7 @@ function main(color="")
             _update_fish!(fish, v, ang, zmax)
 
             t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-            sleep(0.05)
+            sleep(0.1)
             wait(t1)
             t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
             sleep(0.1)
@@ -124,9 +124,11 @@ function main(color="")
             _check_eat!(food, fish, 1E-1)
             _update_food!(food, v_init)
 
-            t3 = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
-            sleep(0.05)
-            wait(t3)
+            if _check_update(food, 1E-2)
+                t3 = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
+                sleep(0.05)
+                wait(t3)
+            end
 
             if length(fig.plot.data) - 5 < weedCount[]
                 for n in length(fig.plot.data) - 4 : weedCount[] 
@@ -138,8 +140,9 @@ function main(color="")
             _update_weed!(weedList)
 
             for n in eachindex(weedList)
+
                 t = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
-                sleep(0.01)
+                sleep(0.1)
                 wait(t)
             end
 
