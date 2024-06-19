@@ -19,6 +19,7 @@ const lock = Ref(false)
 const running = Ref(true)
 const sound = Ref(true)
 const replot = Ref(false)
+const rest = Ref(false)
 const food = _create_food(0)
 const weedList = Vector{Weed}()
 const weedCount = Ref(0)
@@ -72,11 +73,13 @@ function main(color="")
     display(fig)
     sleep(0.1)
 
-    cz = 1
-    cy = 1
-
-    count = 0
+    reset_count = 0
     reset_num = 666
+
+    cy = cz = 1
+
+    rest_count = 0
+    rest_period = 1024
 
     while true
         if sound[]
@@ -85,40 +88,61 @@ function main(color="")
         end
 
         while running[]
-            # give random angle
-            cy = cy * sign(rand(Normal(0.5, 0.5)))
-            cz = cz * sign(rand(Normal(0.5, 0.5)))
 
-            # ang_cz = sign(rand(Normal(0.5, 1)))
-            ang[1] = rand() .* 1 .- 0.5
-            ang[2] = rand() .* 2 .* cy
-            ang[3] = (rand() .* 2 .+ 1) .* cz
+            if !rest[]
+                rest_count += 1
+                # give random angle
+                cy = cy * sign(rand(Normal(0.5, 0.5)))
+                cz = cz * sign(rand(Normal(0.5, 0.5)))
 
-            # adjust fish speed according to postion
-            @inbounds for n = 1:3
-                if (fish.pos[n] - 0.5) * fish.dir[n] > 0
-                    factor = minimum([fish.pos[n], 1 - fish.pos[n]])
+                ang[1] = 0
+                ang[2] = rand() .* 2 .* cy
+                ang[3] = (rand() .* 2 .+ 1) .* cz
+
+                # adjust fish speed according to postion
+                @inbounds for n = 1:3
+                    if (fish.pos[n] - 0.5) * fish.dir[n] > 0
+                        factor = minimum([fish.pos[n], 1 - fish.pos[n]])
+                    else
+                        factor = maximum([fish.pos[n], 1 - fish.pos[n]])
+                    end
+                    v[n] = v_init * factor
+
+                    if n == 1 || n == 2
+                        ang[3] *= sqrt((factor + 1)) # factor map to 1-2
+                    end
+                    if n == 3
+                        ang[2] *= (factor + 1)
+                    end
+                end
+
+                _update_fish!(fish, v, ang, zmax)
+
+                t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
+                sleep(0.05)
+                wait(t1)
+                t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
+                sleep(0.1)
+                wait(t2)
+
+                if rest_count >= rest_period
+                    rest_count = 0
+                    if abs(fish.dir[3]) < 0.1 
+                        rest_period = 1024 + rand(-100:100)
+                        rest[] = true 
+                    end
+                end
+            else
+                if rand(Bool)
+                    rest_count += 1
+                end
+                if rest_count > 100
+                    rest_count = 0
+                    rest[] = false
                 else
-                    factor = maximum([fish.pos[n], 1 - fish.pos[n]])
-                end
-                v[n] = v_init * factor
-
-                if n == 1 || n == 2
-                    ang[3] *= sqrt((factor + 1)) # factor map to 1-2
-                end
-                if n == 3
-                    ang[2] *= (factor + 1)
+                    sleep(0.1)
                 end
             end
-
-            _update_fish!(fish, v, ang, zmax)
-
-            t1 = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-            sleep(0.05)
-            wait(t1)
-            t2 = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
-            sleep(0.1)
-            wait(t2)
 
             _check_eat!(food, fish, 1E-1)
             _update_food!(food, v_init)
@@ -130,7 +154,7 @@ function main(color="")
             end
 
             if length(fig.plot.data) - 5 < weedCount[]
-                for n in length(fig.plot.data) - 4 : weedCount[] 
+                for n in length(fig.plot.data)-4:weedCount[]
                     addtraces!(fig, weedList[n].body)
                     sleep(0.01)
                 end
@@ -146,13 +170,10 @@ function main(color="")
                 end
             end
 
-            count += 1
-            if count >= reset_num # reset
-                # pause()
+            reset_count += 1
+            if reset_count >= reset_num # reset
                 sleep(1)
-                # go()
-                count = 0
-                # reset_num = 3600 + rand(-100:100)
+                reset_count = 0
             end
 
             if replot[]
@@ -162,7 +183,7 @@ function main(color="")
                 replot[] = false
             end
 
-            
+
         end
 
         while !running[]
