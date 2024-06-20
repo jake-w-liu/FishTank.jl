@@ -60,7 +60,7 @@ function main(color="")
 
     # fish initialization
     pos = rand(3) .* 0.5 .+ 0.25
-    ang = zeros(3)
+    ang = zeros(2)
 
     v_init = 0.03
     v = fill(v_init, 3)
@@ -76,10 +76,10 @@ function main(color="")
     reset_count = 0
     reset_num = 666
 
-    cy = cz = 1
-
     rest_count = 0
     rest_period = 1024
+
+    c1 = c2 = 1
 
     while true
         if sound[]
@@ -91,13 +91,13 @@ function main(color="")
 
             if !rest[]
                 rest_count += 1
-                # give random angle
-                cy = cy * sign(rand(Normal(0.5, 0.5)))
-                cz = cz * sign(rand(Normal(0.5, 0.5)))
 
-                ang[1] = 0
-                ang[2] = rand() .* 2 .* cy
-                ang[3] = (rand() .* 2 .+ 1) .* cz
+                # change sign intertia
+                c1 = c1 * sign(rand(Normal(0.5, 0.5)))
+                c2 = c2 * sign(rand(Normal(0.5, 0.5)))
+
+                ang[1] = rand() * 2 * c1
+                ang[2] = (rand() * 2 + 1) * c2
 
                 # adjust fish speed according to postion
                 @inbounds for n = 1:3
@@ -109,10 +109,10 @@ function main(color="")
                     v[n] = v_init * factor
 
                     if n == 1 || n == 2
-                        ang[3] *= sqrt((factor + 1)) # factor map to 1-2
+                        ang[2] *= sqrt((factor + 1)) # factor map to 1-2
                     end
                     if n == 3
-                        ang[2] *= (factor + 1)
+                        ang[1] *= (factor + 1)
                     end
                 end
 
@@ -140,7 +140,7 @@ function main(color="")
                     rest_count = 0
                     rest[] = false
                 else
-                    sleep(0.1)
+                    sleep(0.15)
                 end
             end
 

@@ -1,7 +1,7 @@
 name = "FishTank"
 uuid = "b38b52d1-0eac-4161-8266-eab412337ac4"
 authors = ["Jake W. Liu"]
-version = "1.1.0"
+version = "1.1.1"
 
 [deps]
 BeepBeep = "97dd0070-d6c0-43ac-b134-ca84cdbd343e"
@@ -13,13 +13,13 @@ PlotlyGeometries = "da4dd95e-df4f-4caf-ac06-cee3b0f5c2e6"
 PlotlyJS = "f0f68f2c-4968-5e81-91da-67840de0976a"
 
 [compat]
-julia = "1.6.7"
 BeepBeep = "0.1"
 Distributions = "0.25"
-PlotlyGeometries = "1.0.2"
-PlotlyJS = "0.18"
 FFTW = "1.8"
 MeshGrid = "1.0.2"
+PlotlyGeometries = "1.1.0"
+PlotlyJS = "0.18"
+julia = "1.6.7"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

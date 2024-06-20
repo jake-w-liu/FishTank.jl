@@ -1,4 +1,6 @@
-push!(LOAD_PATH, ".")
+using Pkg, Revise
+Pkg.activate(".")
+
 using FishTank
 
 # basic usage
