@@ -182,8 +182,6 @@ function main(color="")
                 sleep(1)
                 replot[] = false
             end
-
-
         end
 
         while !running[]

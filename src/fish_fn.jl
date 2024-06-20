@@ -29,67 +29,28 @@ end
 
 function _update_fish!(fish, v, ang, zmax)
 
-    eps = 0.075
-    # alpha = ang[1]
-    # beta = ang[1]
-    # gama = ang[2]
+    rot_axis = [fish.dir[2], -fish.dir[1], 0]
 
-    # Rx = [1 0 0;
-    #     0 cosd(alpha) -sind(alpha);
-    #     0 sind(alpha) cosd(alpha)]
-    # Ry = [cosd(beta) 0 sind(beta);
-    #     0 1 0;
-    #     -sind(beta) 0 cosd(beta)]
-    # Rz = [cosd(gama) -sind(gama) 0;
-    #     sind(gama) cosd(gama) 0;
-    #     0 0 1]
+    rot!(fish.body, ang[1], rot_axis, fish.pos)
+    rot!(fish.body, ang[2], [0, 0, 1], fish.pos)
 
-    # R = Rx * Ry * Rz
-    # fish.dir = R * fish.dir
-
-    # @inbounds for n in eachindex(fish.body.x)
-    #     vec = [fish.body.x[n] - fish.pos[1], fish.body.y[n] - fish.pos[2], fish.body.z[n] - fish.pos[3]]
-    #     vec = R * vec + fish.pos
-    #     fish.body.x[n] = vec[1] + v[1] .* fish.dir[1]
-    #     fish.body.y[n] = vec[2] + v[2] .* fish.dir[2]
-    #     fish.body.z[n] = vec[3] + v[3] .* fish.dir[3]
-    # end
-
-    # @inbounds for n in eachindex(fish.tail.x)
-    #     vec = [fish.tail.x[n] - fish.pos[1], fish.tail.y[n] - fish.pos[2], fish.tail.z[n] - fish.pos[3]]
-    #     # 
-    #     vec = R * vec + fish.pos
-    #     fish.tail.x[n] = vec[1] + v[1] .* fish.dir[1]
-    #     fish.tail.y[n] = vec[2] + v[2] .* fish.dir[2]
-    #     fish.tail.z[n] = vec[3] + v[3] .* fish.dir[3]
-    # end
-
-    if fish.dir[1] > 0.05 || fish.dir[2] >= 0.05
-        rot_axis = [fish.dir[2], -fish.dir[1], 0]
-
-        rot!(fish.body, ang[1], rot_axis, fish.pos)
-        rot!(fish.body, ang[2], [0, 0, 1], fish.pos)
-
-        rot!(fish.tail, ang[1], rot_axis, fish.pos)
-        rot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
-    else
-        rot_axis = [fish.dir[2], -fish.dir[1], 0]
-
-    end
-
+    rot!(fish.tail, ang[1], rot_axis, fish.pos)
+    rot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
+    rot_axis = [fish.dir[2], -fish.dir[1], 0]
 
     ## calculate new direction
     axis = rot_axis ./ norm(rot_axis)
     fish.dir = cosd(ang[1]) * fish.dir + sind(ang[1]) * cross(axis, fish.dir) + (1 - cosd(ang[1])) * dot(axis, fish.dir) * axis
     axis = [0, 0, 1]
-    fish.dir = cosd(ang[2]) * fish.dir + sind(ang[2]) * cross(axis, fish.dir) + (1 - cosd(ang[2])) * dot(axis, fish.dir) * axis    
-    fish.dir = fish.dir./norm(fish.dir)
+    fish.dir = cosd(ang[2]) * fish.dir + sind(ang[2]) * cross(axis, fish.dir) + (1 - cosd(ang[2])) * dot(axis, fish.dir) * axis
+    fish.dir = fish.dir ./ norm(fish.dir)
 
     fish.pos = fish.pos + v .* fish.dir
     trans!(fish.body, v .* fish.dir)
     trans!(fish.tail, v .* fish.dir)
 
     # change direction if close to wall
+    eps = 0.075
     if (abs(fish.pos[1]) < eps && fish.dir[1] < 0) || (abs(fish.pos[1] - 1) < eps && fish.dir[1] > 0)
         fish.dir[1] = -fish.dir[1]
         @inbounds for n in eachindex(fish.body.x)
