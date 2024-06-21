@@ -40,14 +40,9 @@ function add(n::Int=10)
     food.num += n
     food.zd = [food.zd; zd]
 
-    food.pts = scatter3d(
-        x=[food.pts.x; x], y=[food.pts.y; y], z=[food.pts.z; z],
-        mode="markers",
-        marker=attr(
-            size=1,
-            color="#8E354A", # SUOH
-        )
-    )
+    food.pts.x = [food.pts.x; x]
+    food.pts.y = [food.pts.y; y]
+    food.pts.z = [food.pts.z; z]
     return nothing
 end
 

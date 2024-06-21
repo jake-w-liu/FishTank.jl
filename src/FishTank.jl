@@ -25,7 +25,6 @@ const weedList = Vector{Weed}()
 const weedCount = Ref(0)
 
 function main(color="")
-    println("dev version")
     # tank initialzation
     tank = cubes([0.5, 0.5, 0.5], [1.1, 1.1, 1.1], "white", 0.2)
     layout = Layout(scene=attr(
@@ -68,8 +67,8 @@ function main(color="")
 
     fish = _create_fish(pos, color)
     zmax, landscape = _create_landscape()
+    
     world = [tank, fish.body, fish.tail, food.pts, landscape]
-
     fig = plot(world, layout)
     task_plot = @async display(fig)
     sleep(0.1)
@@ -122,13 +121,6 @@ function main(color="")
 
                 _update_fish!(fish, v, ang, zmax)
 
-                task_plot = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-                sleep(0.05)
-                wait(task_plot)
-                task_plot = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
-                sleep(0.1)
-                wait(task_plot)
-
                 if rest_count >= rest_period
                     rest_count = 0
                     if abs(fish.dir[3]) < 0.1
@@ -149,30 +141,23 @@ function main(color="")
             end
 
             _check_eat!(food, fish, 1E-1)
-            _update_food!(food, v_init)
 
             if _check_update(food, 1E-2)
-                task_plot = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
-                sleep(0.05)
-                wait(task_plot)
+                _update_food!(food, v_init)
             end
 
             if length(fig.plot.data) - 5 < weedCount[]
                 for n in length(fig.plot.data)-4:weedCount[]
-                    addtraces!(fig, weedList[n].body)
+                    push!(world, weedList[n].body)
+                    react!(fig, world, layout)
                     sleep(0.01)
                 end
             end
 
             _update_weed!(weedList)
 
-            for n in eachindex(weedList)
-                if rand(Bool)
-                    task_plot = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
-                    sleep(0.01)
-                    wait(task_plot)
-                end
-            end
+            react!(fig, world, layout)
+            sleep(0.1)
 
             reset_count += 1
             if reset_count >= reset_num # reset
