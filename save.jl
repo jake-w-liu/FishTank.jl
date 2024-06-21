@@ -93,84 +93,82 @@ function main(color="")
 
             wait(task_plot)
 
-            if !rest[]
-                rest_count += 1
-
-                # change sign intertia
-                c1 = c1 * sign(rand(Normal(0.5, 0.5)))
-                c2 = c2 * sign(rand(Normal(0.5, 0.5)))
-
-                ang[1] = rand() * 2 * c1
-                ang[2] = (rand() * 2 + 1) * c2
-
-                # adjust fish speed according to postion
-                @inbounds for n = 1:3
-                    if (fish.pos[n] - 0.5) * fish.dir[n] > 0
-                        factor = minimum([fish.pos[n], 1 - fish.pos[n]])
-                    else
-                        factor = maximum([fish.pos[n], 1 - fish.pos[n]])
-                    end
-                    v[n] = v_init * factor
-
-                    if n == 1 || n == 2
-                        ang[2] *= sqrt((factor + 1)) # factor map to 1-2
-                    end
-                    if n == 3
-                        ang[1] *= (factor + 1)
-                    end
-                end
-
-                _update_fish!(fish, v, ang, zmax)
-
-                task_plot = @async restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
-                sleep(0.05)
-                wait(task_plot)
-                task_plot = @async restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
-                sleep(0.1)
-                wait(task_plot)
-
-                if rest_count >= rest_period
-                    rest_count = 0
-                    if abs(fish.dir[3]) < 0.1
-                        rest_period = 1024 + rand(-100:100)
-                        rest[] = true
-                    end
-                end
-            else
-                if rand(Bool)
+            task_plot = @async begin
+                if !rest[]
                     rest_count += 1
-                end
-                if rest_count > 100
-                    rest_count = 0
-                    rest[] = false
+
+                    # change sign intertia
+                    c1 = c1 * sign(rand(Normal(0.5, 0.5)))
+                    c2 = c2 * sign(rand(Normal(0.5, 0.5)))
+
+                    ang[1] = rand() * 2 * c1
+                    ang[2] = (rand() * 2 + 1) * c2
+
+                    # adjust fish speed according to postion
+                    @inbounds for n = 1:3
+                        if (fish.pos[n] - 0.5) * fish.dir[n] > 0
+                            factor = minimum([fish.pos[n], 1 - fish.pos[n]])
+                        else
+                            factor = maximum([fish.pos[n], 1 - fish.pos[n]])
+                        end
+                        v[n] = v_init * factor
+
+                        if n == 1 || n == 2
+                            ang[2] *= sqrt((factor + 1)) # factor map to 1-2
+                        end
+                        if n == 3
+                            ang[1] *= (factor + 1)
+                        end
+                    end
+
+                    _update_fish!(fish, v, ang, zmax)
+
+                    restyle!(fig, 3, x=(fish.tail.x,), y=(fish.tail.y,), z=(fish.tail.z,))
+                    sleep(0.05)
+                    restyle!(fig, 2, x=(fish.body.x,), y=(fish.body.y,), z=(fish.body.z,))
+                    sleep(0.1)
+
+                    if rest_count >= rest_period
+                        rest_count = 0
+                        if abs(fish.dir[3]) < 0.1
+                            rest_period = 1024 + rand(-100:100)
+                            rest[] = true
+                        end
+                    end
                 else
-                    sleep(0.15)
+                    if rand(Bool)
+                        rest_count += 1
+                    end
+                    if rest_count > 100
+                        rest_count = 0
+                        rest[] = false
+                    else
+                        sleep(0.15)
+                    end
                 end
-            end
 
-            _check_eat!(food, fish, 1E-1)
-            _update_food!(food, v_init)
+                _check_eat!(food, fish, 1E-1)
+                _update_food!(food, v_init)
 
-            if _check_update(food, 1E-2)
-                task_plot = @async restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
-                sleep(0.05)
-                wait(task_plot)
-            end
-
-            if length(fig.plot.data) - 5 < weedCount[]
-                for n in length(fig.plot.data)-4:weedCount[]
-                    addtraces!(fig, weedList[n].body)
-                    sleep(0.01)
+                if _check_update(food, 1E-2)
+                    restyle!(fig, 4, x=(food.pts.x,), y=(food.pts.y,), z=(food.pts.z,))
+                    sleep(0.05)
                 end
-            end
 
-            _update_weed!(weedList)
+                if length(fig.plot.data) - 5 < weedCount[]
+                    for n in length(fig.plot.data)-4:weedCount[]
+                        addtraces!(fig, weedList[n].body)
+                        sleep(0.01)
+                    end
+                end
 
-            for n in eachindex(weedList)
-                if rand(Bool)
-                    task_plot = @async restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
-                    sleep(0.01)
-                    wait(task_plot)
+                _update_weed!(weedList)
+
+                for n in eachindex(weedList)
+                    if rand(Bool)
+                        restyle!(fig, 5 + n, x=(weedList[n].body.x,), y=(weedList[n].body.y,), z=(weedList[n].body.z,))
+                        sleep(0.01)
+                    end
                 end
             end
 

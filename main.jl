@@ -6,6 +6,6 @@ using FishTank
 # basic usage
 init()
 add()
-for n = 1:5
+for n = 1:10
     plant()
 end

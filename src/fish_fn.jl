@@ -22,7 +22,7 @@ function _create_fish(pos, color="", opc=1)
     body = ellipsoids(pos, [a, b, c], color, opc, 6, 15, ah=0)
     tail = polygons([[-0.3 * a, 0.0, 0.0] .+ pos, [-2.1 * a, 0.0, -1.5 * b] .+ pos, [-2.1 * a, 0.0, 1.5 * b] .+ pos], color, opc * 0.8)
 
-    fish = Fish(body, tail, pos, [1, 0, 0])
+    fish = Fish(body, tail, pos, [1.0, 0.0, 0.0])
 
     return fish
 end
@@ -36,16 +36,16 @@ function _update_fish!(fish, v, ang, zmax)
 
     rot!(fish.tail, ang[1], rot_axis, fish.pos)
     rot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
-    rot_axis = [fish.dir[2], -fish.dir[1], 0]
+    rot_axis .= [fish.dir[2], -fish.dir[1], 0]
 
     ## calculate new direction
     axis = rot_axis ./ norm(rot_axis)
-    fish.dir = cosd(ang[1]) * fish.dir + sind(ang[1]) * cross(axis, fish.dir) + (1 - cosd(ang[1])) * dot(axis, fish.dir) * axis
-    axis = [0, 0, 1]
-    fish.dir = cosd(ang[2]) * fish.dir + sind(ang[2]) * cross(axis, fish.dir) + (1 - cosd(ang[2])) * dot(axis, fish.dir) * axis
-    fish.dir = fish.dir ./ norm(fish.dir)
+    fish.dir .= cosd(ang[1]) * fish.dir + sind(ang[1]) * cross(axis, fish.dir) + (1 - cosd(ang[1])) * dot(axis, fish.dir) * axis
+    axis .= [0, 0, 1]
+    fish.dir .= cosd(ang[2]) * fish.dir + sind(ang[2]) * cross(axis, fish.dir) + (1 - cosd(ang[2])) * dot(axis, fish.dir) * axis
+    fish.dir .= fish.dir ./ norm(fish.dir)
 
-    fish.pos = fish.pos + v .* fish.dir
+    fish.pos .= fish.pos + v .* fish.dir
     trans!(fish.body, v .* fish.dir)
     trans!(fish.tail, v .* fish.dir)
 
