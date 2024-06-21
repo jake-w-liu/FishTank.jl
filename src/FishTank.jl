@@ -112,11 +112,14 @@ function main(color="")
                     v[n] = v_init * factor
 
                     if n == 1 || n == 2
-                        ang[2] *= sqrt((factor + 1)) # factor map to 1-2
+                        ang[2] *= 1.1 * sqrt((factor + 1)) # factor map to 1-2
                     end
                     if n == 3
-                        ang[1] *= (factor + 1)
+                        ang[1] *= 1.2 * (factor + 1)
                     end
+                end
+                if abs(fish.dir[3]) > 0.7
+                    ang[1] = -2 * sign(fish.dir[3]) * abs(ang[1])
                 end
 
                 _update_fish!(fish, v, ang, zmax)

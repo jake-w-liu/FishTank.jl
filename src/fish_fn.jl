@@ -29,17 +29,16 @@ end
 
 function _update_fish!(fish, v, ang, zmax)
 
-    rot_axis = [fish.dir[2], -fish.dir[1], 0]
+    axis = [fish.dir[2], -fish.dir[1], 0]
 
-    rot!(fish.body, ang[1], rot_axis, fish.pos)
+    rot!(fish.body, ang[1], axis, fish.pos)
     rot!(fish.body, ang[2], [0, 0, 1], fish.pos)
 
-    rot!(fish.tail, ang[1], rot_axis, fish.pos)
+    rot!(fish.tail, ang[1], axis, fish.pos)
     rot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
-    rot_axis .= [fish.dir[2], -fish.dir[1], 0]
 
     ## calculate new direction
-    axis = rot_axis ./ norm(rot_axis)
+    axis .= axis ./ norm(axis)
     fish.dir .= cosd(ang[1]) * fish.dir + sind(ang[1]) * cross(axis, fish.dir) + (1 - cosd(ang[1])) * dot(axis, fish.dir) * axis
     axis .= [0, 0, 1]
     fish.dir .= cosd(ang[2]) * fish.dir + sind(ang[2]) * cross(axis, fish.dir) + (1 - cosd(ang[2])) * dot(axis, fish.dir) * axis
