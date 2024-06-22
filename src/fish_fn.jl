@@ -5,7 +5,7 @@ mutable struct Fish
     dir::Vector
 end
 
-function _create_fish(pos, color="", opc=1)
+function _create_fish(pos, color="", opc=0.9)
 
     if color == ""
         r = round(Int, rand() * 255)
@@ -20,7 +20,7 @@ function _create_fish(pos, color="", opc=1)
     c = 1 / fac
 
     body = ellipsoids(pos, [a, b, c], color, opc, 7, 16, ah=0)
-    tail = polygons([[-0.3 * a, 0.0, 0.0] .+ pos, [-2.1 * a, 0.0, -1.5 * b] .+ pos, [-2.1 * a, 0.0, 1.5 * b] .+ pos], color, opc * 0.8)
+    tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color, opc * 0.7)
 
     fish = Fish(body, tail, pos, [1.0, 0.0, 0.0])
 
@@ -80,15 +80,15 @@ function _update_fish!(fish, v, ang, zmax, rest)
         end
     end
 
-    pos = []
+    vec = [fish.body.x[1] - fish.pos[1], fish.body.y[1] - fish.pos[2], fish.body.z[1] - fish.pos[3]]
+    tail_pos = []
     for n in eachindex(fish.tail.x)
-        push!(pos, [fish.tail.x[n], fish.tail.y[n], fish.tail.z[n]])
+        push!(tail_pos, [fish.tail.x[n], fish.tail.y[n], fish.tail.z[n]])
     end
-    # tail_dir = pos[1] .- pos[4]
-    # vec = cross(pos[2].-pos[1], pos[3].-pos[1])
-    # vec .= cross(fish.dir, vec)
-    # vec .= vec ./ norm(vec)
-    # rot!(fish.tail, rand()-0.5, [fish.body.x[1] - fish.pos[1], fish.body.y[1] - fish.pos[2], fish.body.z[1] - fish.pos[3]], fish.pos)
+    tail_dir = tail_pos[1] .- tail_pos[4]
+    tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dot(tail_dir, fish.dir) / norm(tail_dir) / norm(fish.dir)) 
+
+    rot!(fish.tail, 3 * rand()-0.5 + tail_ang, vec, fish.pos)
 
     return nothing
 end

@@ -1,4 +1,4 @@
-using Pkg, Revise
+using Pkg
 Pkg.activate(".")
 
 using FishTank

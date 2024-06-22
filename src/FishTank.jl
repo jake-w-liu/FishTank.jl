@@ -77,7 +77,7 @@ function main(color="")
     reset_num = 1024
 
     rest_count = 0
-    rest_period = 10
+    rest_period = 1024
 
     c1 = c2 = 1
     factor = 0
@@ -118,19 +118,18 @@ function main(color="")
                         ang[1] *= 1.2 * (factor + 1)
                     end
                 end
-                if abs(fish.dir[3]) > 0.7
+                if abs(fish.dir[3]) > sqrt(3) / 2
                     ang[1] = -2 * sign(fish.dir[3]) * abs(ang[1])
                 end
 
                 if rest_count >= rest_period
                     rest_count = 0
-                    if abs(fish.dir[3]) < 0.5
+                    if abs(fish.dir[3]) < 0.2
                         rest_period = 1024 + rand(-100:100)
                         rest[] = true
                     end
                 end
             else
-                println("at rest...")
                 if rand(Bool)
                     rest_count += 1
                 end
