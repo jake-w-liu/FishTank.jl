@@ -67,7 +67,7 @@ function main(color="")
 
     fish = _create_fish(pos, color)
     zmax, landscape = _create_landscape()
-    
+
     world = [tank, fish.body, fish.tail, food.pts, landscape]
     fig = plot(world, layout)
     task_plot = @async display(fig)
@@ -77,7 +77,7 @@ function main(color="")
     reset_num = 1024
 
     rest_count = 0
-    rest_period = 1024
+    rest_period = 10
 
     c1 = c2 = 1
     factor = 0
@@ -122,16 +122,15 @@ function main(color="")
                     ang[1] = -2 * sign(fish.dir[3]) * abs(ang[1])
                 end
 
-                _update_fish!(fish, v, ang, zmax)
-
                 if rest_count >= rest_period
                     rest_count = 0
-                    if abs(fish.dir[3]) < 0.1
+                    if abs(fish.dir[3]) < 0.5
                         rest_period = 1024 + rand(-100:100)
                         rest[] = true
                     end
                 end
             else
+                println("at rest...")
                 if rand(Bool)
                     rest_count += 1
                 end
@@ -139,9 +138,11 @@ function main(color="")
                     rest_count = 0
                     rest[] = false
                 else
-                    sleep(0.15)
+                    sleep(0.1)
                 end
             end
+
+            _update_fish!(fish, v, ang, zmax, rest[])
 
             _check_eat!(food, fish, 1E-1)
 
