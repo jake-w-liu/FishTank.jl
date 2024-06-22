@@ -10,6 +10,8 @@ using MeshGrid
 using FFTW
 using LinearAlgebra
 
+using Infiltrator
+
 include("fish_fn.jl")
 include("food_fn.jl")
 include("weed_fn.jl")
@@ -164,8 +166,17 @@ function main(color="")
 
             reset_count += 1
             if reset_count >= reset_num # reset
+
+                world_copy = copy(world)
+                purge!(fig)
+                
+                for tr in world_copy
+                    push!(fig.plot.data, tr)
+                end
+                world = world_copy
+                react!(fig, world, layout)
+                sleep(0.1)
                 GC.gc()
-                sleep(1)
                 reset_count = 0
             end
 

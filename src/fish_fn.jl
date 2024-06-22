@@ -86,7 +86,11 @@ function _update_fish!(fish, v, ang, zmax, rest)
         push!(tail_pos, [fish.tail.x[n], fish.tail.y[n], fish.tail.z[n]])
     end
     tail_dir = tail_pos[1] .- tail_pos[4]
-    tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dot(tail_dir, fish.dir) / norm(tail_dir) / norm(fish.dir)) 
+    dp = dot(tail_dir, fish.dir) / norm(tail_dir) / norm(fish.dir)
+    if abs(dp) > 1
+        dp = sign(dp) * 1
+    end
+    tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dp) 
 
     rot!(fish.tail, 3 * rand()-0.5 + tail_ang, vec, fish.pos)
 
