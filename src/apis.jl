@@ -28,7 +28,7 @@ function unmute()
     return nothing
 end
 
-function add(n::Int=10)
+function feed(n::Int=10)
     @assert n >= 0
 
     x = rand(n) .* 0.8 .+ 0.1
@@ -56,7 +56,14 @@ function plant()
     return nothing
 end
 
-function showup()
-    replot[] = true
+function replot()
+    plotTrig[] = true
+    return nothing
+end
+
+function look(az::Real, el::Real)
+    Az[] = az
+    El[] = el
+    viewTrig[] = true
     return nothing
 end

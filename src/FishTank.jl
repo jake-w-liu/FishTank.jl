@@ -1,6 +1,6 @@
 module FishTank
 
-export init, pause, go, mute, unmute, check, add, plant, showup
+export init, pause, go, mute, unmute, check, feed, plant, replot, look
 
 using PlotlyJS
 using PlotlyGeometries
@@ -10,8 +10,6 @@ using MeshGrid
 using FFTW
 using LinearAlgebra
 
-using Infiltrator
-
 include("fish_fn.jl")
 include("food_fn.jl")
 include("weed_fn.jl")
@@ -20,15 +18,19 @@ include("apis.jl")
 const lock = Ref(false)
 const running = Ref(true)
 const sound = Ref(true)
-const replot = Ref(false)
+const plotTrig = Ref(false)
 const rest = Ref(false)
 const food = _create_food(0)
 const weedList = Vector{Weed}()
 const weedCount = Ref(0)
+const Az = Ref(45.0)
+const El = Ref(35.264389682754654)
+const viewTrig = Ref(false)
 
 function main(color="")
     # tank initialzation
-    tank = cubes([0.5, 0.5, 0.5], [1.1, 1.1, 1.1], "white", 0.2)
+    tank = cubes([0.5, 0.5, 0.5], [1.1, 1.1, 1.1], "white", 0.15)
+    tank.hoverinfo = "none"
     layout = Layout(scene=attr(
             xaxis=attr(
                 visible=false,
@@ -44,18 +46,18 @@ function main(color="")
             ),
         ),
         scene_camera=attr(
-            eye=attr(x=1.75, y=1.25, z=0.6)
+            eye=attr(x=1.25, y=1.25, z=1.25)
         ),
         uirevision=true,
         transition=attr(
             easing="quad-in-out",
         ),
         height=400,
-        width=400,
+        width=420,
         margin=attr(
             l=45,
             r=0,
-            b=15,
+            b=0,
             t=0,
         ),
     )
@@ -76,7 +78,7 @@ function main(color="")
     sleep(0.1)
 
     reset_count = 0
-    reset_num = 1024
+    reset_num = 8192
 
     rest_count = 0
     rest_period = 1024
@@ -91,6 +93,11 @@ function main(color="")
         end
 
         while running[]
+
+            if viewTrig[]
+                _set_view(fig, Az[], El[])
+                viewTrig[] = false
+            end
 
             wait(task_plot)
 
@@ -145,10 +152,10 @@ function main(color="")
 
             _update_fish!(fish, v, ang, zmax, rest[])
 
-            _check_eat!(food, fish, 1E-1)
+            _check_eat!(food, fish, 5E-2)
 
             if _check_update(food, 1E-2)
-                _update_food!(food, v_init)
+                _update_food!(food, 1E-2)
             end
 
             if length(fig.plot.data) - 5 < weedCount[]
@@ -180,11 +187,11 @@ function main(color="")
                 reset_count = 0
             end
 
-            if replot[]
+            if plotTrig[]
                 fig = plot(world, layout)
                 display(fig)
                 sleep(1)
-                replot[] = false
+                plotTrig[] = false
             end
         end
 
@@ -234,7 +241,6 @@ function _create_landscape()
 
     return maximum(Z), mesh3d(x=[X[:]; X[:]], y=[Y[:]; Y[:]], z=[Z[:]; Z0[:]],
         alphahull=0,
-        # color="#CBBD93",
         color="#ECB88A"; # USUGAKI
         opacity=1,
         lighting=attr(
@@ -242,7 +248,19 @@ function _create_landscape()
             specular=1.2,
             roughness=1.0,
         ),
+        hoverinfo="none",
     )
+end
+
+function _set_view(fig, az, el)
+
+    x = 1.25 * sqrt(3) * cosd(el) * cosd(az)
+    y = 1.25 * sqrt(3) * cosd(el) * sind(az)
+    z = 1.25 * sqrt(3) * sind(el)
+
+    fig.plot.layout.scene_camera[:eye][:x] = x
+    fig.plot.layout.scene_camera[:eye][:y] = y
+    fig.plot.layout.scene_camera[:eye][:z] = z
 end
 
 end

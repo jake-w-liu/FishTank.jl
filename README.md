@@ -2,11 +2,19 @@
 
 [![Build Status](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml/badge.svg)](https://github.com/akjake616/FishTank.jl/actions/workflows/CI.yml)
 
-`FishTank.jl` creates an e-fish for you in case you feel lonely when you are coding. The game is visualized using [`PlotlyJS.jl`](https://github.com/JuliaPlots/PlotlyJS.jl) and [`PlotlyGeometries.jl`](https://github.com/akjake616/PlotlyGeometries.jl).
+`FishTank.jl` creates an e-fish for you in case you feel lonely when you are coding :fish:. The game is visualized using [`PlotlyJS.jl`](https://github.com/JuliaPlots/PlotlyJS.jl) and [`PlotlyGeometries.jl`](https://github.com/akjake616/PlotlyGeometries.jl).
 
 <p align="center">
   <img alt="FishTank.jl" src="./media/fish-tank.gif" width="50%" height="auto" />
 </p>
+
+## Features
+
+- **Customized Fish Tank**: Set up your unique fish tank environment :boom:
+- **Interactive Fish Feeding**: Add fish feed and wait for your fish to eat them up :diamonds:
+- **Realistic Fish Behavior**: Fish can sleep occasionally, mimicking natural behavior :zzz:
+- **Decorate with Water Plants**: Enhance the tank with water plants for a more vibrant look :seedling:
+- **Random Landscape**: Landscape created with a random Gaussian surface (using [`FFTW.jl`](https://github.com/JuliaMath/FFTW.jl) under GPL license :exclamation:)
 
 ## Installation
 
@@ -29,12 +37,25 @@ init() # creates a random colored fish by default.
 To feed the fish with, for example, six grains, call the following:
 
 ```julia 
-add(6) # add 6 grains to the fish tank, if the input is not specified, 10 grains are added
+feed(6) # add 6 grains to the fish tank, if the input is not specified, 10 grains are added
 ```
 
-Finally, call the following to decorate the fish tank with waterweed:
+To decorate the fish tank with waterweed:
 ```julia 
 plant() # randomly plant one waterweed bunble
+```
+
+You can also set the az/el view angle by
+```julia 
+look(0, 10) # az = 0 deg, el = 10 deg
+```
+or even do some animations:
+
+```julia
+@async for n in 1:360
+    look(n, 0)
+    sleep(0.1)
+end
 ```
 
 Enjoy! :angel:
@@ -76,7 +97,7 @@ Turn on sound effects.
 ___
 
 ```julia
-add(n::Int=10)
+feed(n::Int=10)
 ```
 Add `n` grains (add 10 if `n` not specified).
 ___
@@ -96,11 +117,19 @@ Plant waterweed.
 ___
 
 ```julia
-showup()
+replot()
 ```
-Show up the fish tank window (if it is accidentally closed).
+Replot the fish tank window (if it is accidentally closed).
 
 ___
+
+```julia
+look(az::Real, el::Real)
+```
+Set the [az/el view angle](https://matplotlib.org/stable/api/toolkits/mplot3d/view_angles.html).  A word on the view: currently in order to solve memory usage issues, I have to purge the plot every period of time, and this resets the view angle if you rotates the plot by `pause() -> iteractive rtation -> go()`. It is better to set the default view angle by this function. Think of `pause()` and `go()` as some debug functionalities please :satisfied:
+
+___
+
 
 
 

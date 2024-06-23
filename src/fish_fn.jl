@@ -92,7 +92,7 @@ function _update_fish!(fish, v, ang, zmax, rest)
     end
     tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dp) 
 
-    rot!(fish.tail, 3 * rand()-0.5 + tail_ang, vec, fish.pos)
+    rot!(fish.tail, 5 * rand()-0.5 + tail_ang, vec, fish.pos)
 
     return nothing
 end

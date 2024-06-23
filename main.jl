@@ -3,9 +3,15 @@ Pkg.activate(".")
 
 using FishTank
 
-# basic usage
 init()
-add()
+feed()
 for n = 1:10
     plant()
+end
+
+look(0, 0)
+sleep(0.1)
+@async for n in 1:360
+    look(n, 0)
+    sleep(0.1)
 end
