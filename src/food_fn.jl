@@ -1,7 +1,7 @@
 mutable struct Food
     num::Int
     pts::PlotlyJS.GenericTrace
-    zd::Vector
+    zd::Vector{Float64}
 end
 
 function _create_food(n::Int)

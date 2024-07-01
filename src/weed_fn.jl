@@ -1,6 +1,6 @@
 mutable struct Weed
     body::PlotlyJS.GenericTrace
-    pos::Vector
+    pos::Vector{Vector{Float64}}
 end
 
 function _create_weed()
@@ -26,7 +26,7 @@ function _create_weed()
     b = round(Int,  75 + rand()*3)
     color = "rgb($r, $g, $b)"
 
-    weed = Weed(polygons(pts, color, 0.6), pts)
+    weed = Weed(polygons(pts, color; opc=0.6), pts)
 
     return weed
 end

@@ -1,8 +1,8 @@
 mutable struct Fish
     body::PlotlyJS.GenericTrace
     tail::PlotlyJS.GenericTrace
-    pos::Vector
-    dir::Vector
+    pos::Vector{Float64}
+    dir::Vector{Float64}
 end
 
 function _create_fish(pos, color="", opc=0.9)
@@ -19,8 +19,8 @@ function _create_fish(pos, color="", opc=0.9)
     b = 0.8 / fac
     c = 1 / fac
 
-    body = ellipsoids(pos, [a, b, c], color, opc, 7, 16, ah=0)
-    tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color, opc * 0.7)
+    body = ellipsoids(pos, [a, b, c], color; opc=opc, tres=7, pres=16, ah=0)
+    tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color; opc=opc * 0.7)
 
     fish = Fish(body, tail, pos, [1.0, 0.0, 0.0])
 
@@ -32,11 +32,11 @@ function _update_fish!(fish, v, ang, zmax, rest)
     if !rest
         axis = [fish.dir[2], -fish.dir[1], 0]
 
-        rot!(fish.body, ang[1], axis, fish.pos)
-        rot!(fish.body, ang[2], [0, 0, 1], fish.pos)
+        grot!(fish.body, ang[1], axis, fish.pos)
+        grot!(fish.body, ang[2], [0, 0, 1], fish.pos)
 
-        rot!(fish.tail, ang[1], axis, fish.pos)
-        rot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
+        grot!(fish.tail, ang[1], axis, fish.pos)
+        grot!(fish.tail, ang[2], [0, 0, 1], fish.pos)
 
         ## calculate new direction
         axis .= axis ./ norm(axis)
@@ -46,8 +46,8 @@ function _update_fish!(fish, v, ang, zmax, rest)
         fish.dir .= fish.dir ./ norm(fish.dir)
 
         fish.pos .= fish.pos + v .* fish.dir
-        trans!(fish.body, v .* fish.dir)
-        trans!(fish.tail, v .* fish.dir)
+        gtrans!(fish.body, v .* fish.dir)
+        gtrans!(fish.tail, v .* fish.dir)
 
         # change direction if close to wall
         eps = 0.075
@@ -92,7 +92,7 @@ function _update_fish!(fish, v, ang, zmax, rest)
     end
     tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dp) 
 
-    rot!(fish.tail, 5 * rand()-0.5 + tail_ang, vec, fish.pos)
+    grot!(fish.tail, 5 * rand()-0.5 + tail_ang, vec, fish.pos)
 
     return nothing
 end

@@ -13,7 +13,7 @@ using LinearAlgebra
 include("fish_fn.jl")
 include("food_fn.jl")
 include("weed_fn.jl")
-include("apis.jl")
+include("api.jl")
 
 const lock = Ref(false)
 const running = Ref(true)
@@ -29,7 +29,7 @@ const viewTrig = Ref(false)
 
 function main(color="")
     # tank initialzation
-    tank = cubes([0.5, 0.5, 0.5], [1.1, 1.1, 1.1], "white", 0.15)
+    tank = cubes([0.5, 0.5, 0.5], 1.1, "white"; opc=0.15)
     tank.hoverinfo = "none"
     layout = Layout(scene=attr(
             xaxis=attr(
