@@ -117,6 +117,13 @@ Plant waterweed.
 ___
 
 ```julia
+plant(n::Int)
+```
+Plant `n` waterweeds.
+
+___
+
+```julia
 replot()
 ```
 Replot the fish tank window (if it is accidentally closed).

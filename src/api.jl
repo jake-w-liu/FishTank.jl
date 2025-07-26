@@ -105,6 +105,19 @@ function plant()
 end
 
 """
+    plant(n::Int)
+
+Plant n weeds in the tank.
+"""
+function plant(n::Int)
+    for _ in 1:n
+        push!(TANK_STATE.weedList, _create_weed())
+        TANK_STATE.weedCount += 1
+    end
+    return nothing
+end
+
+"""
     replot()
 
 Replot the tank.
