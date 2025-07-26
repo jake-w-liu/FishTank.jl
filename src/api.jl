@@ -1,33 +1,71 @@
+"""
+    init(color::String="")
+
+Initialize the fish tank.
+
+Arguments:
+- `color`: The color of the fish. If not specified, a random color will be used.
+"""
 function init(color::String="")
-    if !lock[]
-        lock[] = true
+    if !TANK_STATE.lock
+        println("Creating your fish tank...")
+        TANK_STATE.lock = true
         @async main(color)
+        println("Fish tank initialized.\n")
     else
         println("Fish tank already initialized.")
     end
     return nothing
 end
 
+"""
+    pause()
+
+Pause the simulation.
+"""
 function pause()
-    running[] = false
+    TANK_STATE.running = false
     return nothing
 end
 
+"""
+    go()
+
+Resume the simulation.
+"""
 function go()
-    running[] = true
+    TANK_STATE.running = true
     return nothing
 end
 
+"""
+    mute()
+
+Mute the sound.
+"""
 function mute()
-    sound[] = false
+    TANK_STATE.sound = false
     return nothing
 end
 
+"""
+    unmute()
+
+Unmute the sound.
+"""
 function unmute()
-    sound[] = true
+    TANK_STATE.sound = true
     return nothing
 end
 
+"""
+    feed(n::Int=10)
+
+Feed the fish.
+
+Arguments:
+- `n`: The number of food particles to add.
+"""
 function feed(n::Int=10)
     @assert n >= 0
 
@@ -37,33 +75,57 @@ function feed(n::Int=10)
 
     zd = rand(n) .* 0.8 .+ 0.1
 
-    food.num += n
-    food.zd = [food.zd; zd]
+    TANK_STATE.food.num += n
+    TANK_STATE.food.zd = [TANK_STATE.food.zd; zd]
 
-    food.pts.x = [food.pts.x; x]
-    food.pts.y = [food.pts.y; y]
-    food.pts.z = [food.pts.z; z]
+    TANK_STATE.food.pts.x = [TANK_STATE.food.pts.x; x]
+    TANK_STATE.food.pts.y = [TANK_STATE.food.pts.y; y]
+    TANK_STATE.food.pts.z = [TANK_STATE.food.pts.z; z]
     return nothing
 end
 
+"""
+    check()
+
+Check the amount of food in the tank.
+"""
 function check()
-    return food.num
+    return TANK_STATE.food.num
 end
 
+"""
+    plant()
+
+Plant a weed in the tank.
+"""
 function plant()
-    push!(weedList, _create_weed())
-    weedCount[] += 1
+    push!(TANK_STATE.weedList, _create_weed())
+    TANK_STATE.weedCount += 1
     return nothing
 end
 
+"""
+    replot()
+
+Replot the tank.
+"""
 function replot()
-    plotTrig[] = true
+    TANK_STATE.plotTrig = true
     return nothing
 end
 
+"""
+    look(az::Real, el::Real)
+
+Change the camera angle.
+
+Arguments:
+- `az`: The azimuth angle.
+- `el`: The elevation angle.
+"""
 function look(az::Real, el::Real)
-    Az[] = az
-    El[] = el
-    viewTrig[] = true
+    TANK_STATE.Az = az
+    TANK_STATE.El = el
+    TANK_STATE.viewTrig = true
     return nothing
 end

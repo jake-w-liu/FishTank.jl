@@ -26,7 +26,14 @@ function _create_weed()
     b = round(Int,  75 + rand()*3)
     color = "rgb($r, $g, $b)"
 
-    weed = Weed(polygons(pts, color; opc=0.6), pts)
+    trace = polygons(pts, color; opc=0.6)
+
+    if length(trace.x) == length(pts) + 1
+        # It seems polygons closed the loop, so we should update our reference positions as well.
+        push!(pts, pts[1])
+    end
+
+    weed = Weed(trace, pts)
 
     return weed
 end

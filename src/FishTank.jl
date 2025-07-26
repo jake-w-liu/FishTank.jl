@@ -15,20 +15,34 @@ include("food_fn.jl")
 include("weed_fn.jl")
 include("api.jl")
 
-const lock = Ref(false)
-const running = Ref(true)
-const sound = Ref(true)
-const plotTrig = Ref(false)
-const rest = Ref(false)
-const food = _create_food(0)
-const weedList = Vector{Weed}()
-const weedCount = Ref(0)
-const Az = Ref(45.0)
-const El = Ref(35.264389682754654)
-const viewTrig = Ref(false)
+const RESET_COUNT_THRESHOLD = 8192
+const REST_PERIOD = 1024
+const INITIAL_FISH_VELOCITY = 0.03
+const EAT_DISTANCE = 5E-2
+const FOOD_UPDATE_THRESHOLD = 1E-2
+const MOUTH_OFFSET = 0.06
 
-function main(color="")
-    # tank initialzation
+mutable struct TankState
+    lock::Bool
+    running::Bool
+    sound::Bool
+    plotTrig::Bool
+    rest::Bool
+    food::Food
+    weedList::Vector{Weed}
+    weedCount::Int
+    Az::Float64
+    El::Float64
+    viewTrig::Bool
+end
+
+function TankState()
+    TankState(false, true, true, false, false, _create_food(0), Vector{Weed}(), 0, 45.0, 35.264389682754654, false)
+end
+
+const TANK_STATE = TankState()
+
+function _initialize_tank()
     tank = cubes([0.5, 0.5, 0.5], 1.1, "white"; opc=0.15)
     tank.hoverinfo = "none"
     layout = Layout(scene=attr(
@@ -61,47 +75,53 @@ function main(color="")
             t=0,
         ),
     )
+    return tank, layout
+end
 
-    # fish initialization
+function _initialize_fish(color)
     pos = rand(3) .* 0.5 .+ 0.25
     ang = zeros(2)
-
-    v_init = 0.03
-    v = fill(v_init, 3)
-
+    v = fill(INITIAL_FISH_VELOCITY, 3)
     fish = _create_fish(pos, color)
+    return fish, ang, v
+end
+
+function main(color="")
+    # tank initialzation
+    tank, layout = _initialize_tank()
+
+    # fish initialization
+    fish, ang, v = _initialize_fish(color)
     zmax, landscape = _create_landscape()
 
-    world = [tank, fish.body, fish.tail, food.pts, landscape]
+    world = [tank, fish.body, fish.tail, TANK_STATE.food.pts, landscape]
     fig = plot(world, layout)
     task_plot = @async display(fig)
     sleep(0.1)
 
     reset_count = 0
-    reset_num = 8192
-
     rest_count = 0
-    rest_period = 1024
+    rest_period = REST_PERIOD
 
     c1 = c2 = 1
     factor = 0
 
     while true
-        if sound[]
+        if TANK_STATE.sound
             sleep(0.1)
             beep("facebook")
         end
 
-        while running[]
+        while TANK_STATE.running
 
-            if viewTrig[]
-                _set_view(fig, Az[], El[])
-                viewTrig[] = false
+            if TANK_STATE.viewTrig
+                _set_view(fig, TANK_STATE.Az, TANK_STATE.El)
+                TANK_STATE.viewTrig = false
             end
 
             wait(task_plot)
 
-            if !rest[]
+            if !TANK_STATE.rest
                 rest_count += 1
 
                 # change sign intertia
@@ -118,7 +138,7 @@ function main(color="")
                     else
                         factor = maximum([fish.pos[n], 1 - fish.pos[n]])
                     end
-                    v[n] = v_init * factor
+                    v[n] = INITIAL_FISH_VELOCITY * factor
 
                     if n == 1 || n == 2
                         ang[2] *= 1.1 * sqrt((factor + 1)) # factor map to 1-2
@@ -134,8 +154,8 @@ function main(color="")
                 if rest_count >= rest_period
                     rest_count = 0
                     if abs(fish.dir[3]) < 0.2
-                        rest_period = 1024 + rand(-100:100)
-                        rest[] = true
+                        rest_period = REST_PERIOD + rand(-100:100)
+                        TANK_STATE.rest = true
                     end
                 end
             else
@@ -144,35 +164,35 @@ function main(color="")
                 end
                 if rest_count > 100
                     rest_count = 0
-                    rest[] = false
+                    TANK_STATE.rest = false
                 else
                     sleep(0.1)
                 end
             end
 
-            _update_fish!(fish, v, ang, zmax, rest[])
+            _update_fish!(fish, v, ang, zmax, TANK_STATE.rest)
 
-            _check_eat!(food, fish, 5E-2)
+            _check_eat!(TANK_STATE.food, fish, EAT_DISTANCE)
 
-            if _check_update(food, 1E-2)
-                _update_food!(food, 1E-2)
+            if _check_update(TANK_STATE.food, FOOD_UPDATE_THRESHOLD)
+                _update_food!(TANK_STATE.food, FOOD_UPDATE_THRESHOLD)
             end
 
-            if length(fig.plot.data) - 5 < weedCount[]
-                for n in length(fig.plot.data)-4:weedCount[]
-                    push!(world, weedList[n].body)
+            if length(fig.plot.data) - 5 < TANK_STATE.weedCount
+                for n in length(fig.plot.data)-4:TANK_STATE.weedCount
+                    push!(world, TANK_STATE.weedList[n].body)
                     react!(fig, world, layout)
                     sleep(0.01)
                 end
             end
 
-            _update_weed!(weedList)
+            _update_weed!(TANK_STATE.weedList)
 
             react!(fig, world, layout)
             sleep(0.1)
 
             reset_count += 1
-            if reset_count >= reset_num # reset
+            if reset_count >= RESET_COUNT_THRESHOLD # reset
 
                 world_copy = copy(world)
                 purge!(fig)
@@ -187,29 +207,29 @@ function main(color="")
                 reset_count = 0
             end
 
-            if plotTrig[]
+            if TANK_STATE.plotTrig
                 fig = plot(world, layout)
                 display(fig)
                 sleep(1)
-                plotTrig[] = false
+                TANK_STATE.plotTrig = false
             end
         end
 
-        while !running[]
+        while !TANK_STATE.running
             sleep(1)
         end
     end
 end
 
 function _check_eat!(food, fish, eps)
-    tmp = []
-    mouth_pos = fish.pos .+ 0.06 .* fish.dir
+    tmp = Int[]
+    mouth_pos = fish.pos .+ MOUTH_OFFSET .* fish.dir
     if food.num != 0
         @inbounds for n in eachindex(food.num)
             if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
                 push!(tmp, n)
                 food.num -= 1
-                if sound[]
+                if TANK_STATE.sound
                     if food.num != 0
                         beep("coin")
                     else
