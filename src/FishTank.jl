@@ -136,10 +136,13 @@ function main(color="")
                     min_dist_sq = Inf
                     closest_food_idx = -1
                     for i in eachindex(TANK_STATE.food.pts.x)
-                        dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
-                        if dist_sq < min_dist_sq
-                            min_dist_sq = dist_sq
-                            closest_food_idx = i
+                        food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- fish.pos
+                        if dot(food_vec./norm(food_vec), fish.dir./norm(fish.dir)) > 0.2 # Check if food is in front of the fish
+                            dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
+                            if dist_sq < min_dist_sq
+                                min_dist_sq = dist_sq
+                                closest_food_idx = i
+                            end
                         end
                     end
 
