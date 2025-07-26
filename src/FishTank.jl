@@ -9,6 +9,8 @@ using BeepBeep
 using MeshGrid
 using FFTW
 using LinearAlgebra
+using WAV
+
 
 include("fish_fn.jl")
 include("food_fn.jl")
@@ -21,6 +23,7 @@ const INITIAL_FISH_VELOCITY = 0.03
 const EAT_DISTANCE = 2E-2
 const FOOD_UPDATE_THRESHOLD = 1E-2
 const MOUTH_OFFSET = 3E-2
+const SOUND_EAT, FS = wavread("media/eat.wav")
 
 mutable struct TankState
     lock::Bool
@@ -87,6 +90,8 @@ function _initialize_fish(color)
 end
 
 function main(color="")
+    
+    
     # tank initialzation
     tank, layout = _initialize_tank()
 
@@ -108,7 +113,7 @@ function main(color="")
 
     while true
         if TANK_STATE.sound
-            sleep(0.1)
+            sleep(1)
             beep("facebook")
         end
 
@@ -175,7 +180,7 @@ function main(color="")
                         desired_ang2 = rad2deg(delta_yaw) # Corresponds to ang[2] (yaw)
 
                         # Blend desired angles with random angles
-                        blend_factor_ang = 0.2 # How strongly to bias towards desired angles
+                        blend_factor_ang = 0.14 # How strongly to bias towards desired angles
                         ang[1] = (1 - blend_factor_ang) * (rand() * 2 * c1) + blend_factor_ang * desired_ang1
                         ang[2] = (1 - blend_factor_ang) * ((rand() * 2 + 1) * c2) + blend_factor_ang * desired_ang2
                     else
@@ -289,11 +294,7 @@ function _check_eat!(food, fish, eps)
                 food.num -= 1
                 fish.hunger = max(0.0, fish.hunger - 0.05) # Reduce hunger when eating
                 if TANK_STATE.sound
-                    if food.num != 0
-                        beep("coin")
-                    else
-                        beep("ping")
-                    end
+                    wavplay(SOUND_EAT, FS)
                 end
             end
         end

@@ -11,7 +11,7 @@ function _create_food(n::Int)
     y = rand(n) .* 0.8 .+ 0.1
     z = ones(n)
 
-    zd = rand(n) .* 0.8 .+ 0.1
+    zd = rand(n) .* 0.8 .+ 0.2
 
     pts = scatter3d(
         x=x, y=y, z=z,
