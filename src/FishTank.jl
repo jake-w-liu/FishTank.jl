@@ -18,9 +18,9 @@ include("api.jl")
 const RESET_COUNT_THRESHOLD = 8192
 const REST_PERIOD = 1024
 const INITIAL_FISH_VELOCITY = 0.03
-const EAT_DISTANCE = 5E-2
+const EAT_DISTANCE = 2E-2
 const FOOD_UPDATE_THRESHOLD = 1E-2
-const MOUTH_OFFSET = 0.06
+const MOUTH_OFFSET = 3E-2
 
 mutable struct TankState
     lock::Bool
@@ -124,12 +124,67 @@ function main(color="")
             if !TANK_STATE.rest
                 rest_count += 1
 
-                # change sign intertia
-                c1 = c1 * sign(rand(Normal(0.5, 0.5)))
-                c2 = c2 * sign(rand(Normal(0.5, 0.5)))
+                # Increase hunger over time
+                if fish.hunger < 1.0
+                    fish.hunger += 0.001
+                end
+                # println("Fish hunger: ", fish.hunger)
 
-                ang[1] = rand() * 2 * c1
-                ang[2] = (rand() * 2 + 1) * c2
+                target_dir = fish.dir # Default to current direction
+                if fish.hunger > 0.5 && TANK_STATE.food.num > 0 # If hungry and food is available
+                    # Find closest food particle
+                    min_dist_sq = Inf
+                    closest_food_idx = -1
+                    for i in eachindex(TANK_STATE.food.pts.x)
+                        dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
+                        if dist_sq < min_dist_sq
+                            min_dist_sq = dist_sq
+                            closest_food_idx = i
+                        end
+                    end
+
+                    # println("ind: ", closest_food_idx)
+
+                    if closest_food_idx != -1
+                        food_pos = [TANK_STATE.food.pts.x[closest_food_idx], TANK_STATE.food.pts.y[closest_food_idx], TANK_STATE.food.pts.z[closest_food_idx]]
+                        target_dir = food_pos .- fish.pos
+                        target_dir .= target_dir ./ norm(target_dir) # Normalize target direction
+
+                        # Calculate desired angles to steer towards target_dir
+                        # Yaw angle (rotation around Z-axis)
+                        current_yaw = atan(fish.dir[2], fish.dir[1])
+                        target_yaw = atan(target_dir[2], target_dir[1])
+                        delta_yaw = target_yaw - current_yaw
+                        if delta_yaw > pi
+                            delta_yaw -= 2 * pi
+                        elseif delta_yaw < -pi
+                            delta_yaw += 2 * pi
+                        end
+                        
+                        # Pitch angle (rotation around Y-axis, assuming fish.dir is in XY plane for this)
+                        # This is a simplification, a more robust pitch would involve cross products
+                        current_pitch = atan(fish.dir[3], sqrt(fish.dir[1]^2 + fish.dir[2]^2))
+                        target_pitch = atan(target_dir[3], sqrt(target_dir[1]^2 + target_dir[2]^2))
+                        delta_pitch = target_pitch - current_pitch
+
+                        # Convert to degrees for ang
+                        desired_ang1 = rad2deg(delta_pitch) # Corresponds to ang[1] (pitch)
+                        desired_ang2 = rad2deg(delta_yaw) # Corresponds to ang[2] (yaw)
+
+                        # Blend desired angles with random angles
+                        blend_factor_ang = 0.2 # How strongly to bias towards desired angles
+                        ang[1] = (1 - blend_factor_ang) * (rand() * 2 * c1) + blend_factor_ang * desired_ang1
+                        ang[2] = (1 - blend_factor_ang) * ((rand() * 2 + 1) * c2) + blend_factor_ang * desired_ang2
+                    else
+                        # If no food found or not hungry, use original random angles
+                        ang[1] = rand() * 2 * c1
+                        ang[2] = (rand() * 2 + 1) * c2
+                    end
+                else
+                    # If not hungry or no food, use original random angles
+                    ang[1] = rand() * 2 * c1
+                    ang[2] = (rand() * 2 + 1) * c2
+                end
 
                 # adjust fish speed according to postion
                 @inbounds for n = 1:3
@@ -225,10 +280,11 @@ function _check_eat!(food, fish, eps)
     tmp = Int[]
     mouth_pos = fish.pos .+ MOUTH_OFFSET .* fish.dir
     if food.num != 0
-        @inbounds for n in eachindex(food.num)
+        @inbounds for n in eachindex(food.pts.x)
             if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
                 push!(tmp, n)
                 food.num -= 1
+                fish.hunger = max(0.0, fish.hunger - 0.05) # Reduce hunger when eating
                 if TANK_STATE.sound
                     if food.num != 0
                         beep("coin")
@@ -284,4 +340,3 @@ function _set_view(fig, az, el)
 end
 
 end
-

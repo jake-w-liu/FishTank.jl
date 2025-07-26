@@ -11,7 +11,6 @@ function init(color::String="")
         println("Creating your fish tank...")
         TANK_STATE.lock = true
         @async main(color)
-        println("Fish tank initialized.\n")
     else
         println("Fish tank already initialized.")
     end
