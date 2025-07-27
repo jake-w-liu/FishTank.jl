@@ -40,13 +40,16 @@ mutable struct TankState
 end
 
 function TankState()
-    TankState(false, true, true, false, false, _create_food(0), Vector{Weed}(), 0, 45.0, 35.264389682754654, false)
+    TankState(false, true, true, false, false, _create_food(0), Vector{Weed}(), 0, 28.0, 12.0, false)
 end
 
 const TANK_STATE = TankState()
 
 function _initialize_tank()
     tank = cubes([0.5, 0.5, 0.5], 1.1, "white"; opc=0.15)
+    x = 1.25 * sqrt(3) * cosd(TANK_STATE.El) * cosd(TANK_STATE.Az)
+    y = 1.25 * sqrt(3) * cosd(TANK_STATE.El) * sind(TANK_STATE.Az)
+    z = 1.25 * sqrt(3) * sind(TANK_STATE.El)
     tank.hoverinfo = "none"
     layout = Layout(scene=attr(
             xaxis=attr(
@@ -63,7 +66,7 @@ function _initialize_tank()
             ),
         ),
         scene_camera=attr(
-            eye=attr(x=1.25, y=1.25, z=1.25)
+            eye=attr(x=x, y=y, z=z)
         ),
         uirevision=true,
         transition=attr(
@@ -136,7 +139,7 @@ function main(color="")
                 # println("Fish hunger: ", fish.hunger)
 
                 target_dir = fish.dir # Default to current direction
-                if fish.hunger > 0.5 && TANK_STATE.food.num > 0 # If hungry and food is available
+                if fish.hunger > 0.6 && TANK_STATE.food.num > 0 # If hungry and food is available
                     # Find closest food particle
                     min_dist_sq = Inf
                     closest_food_idx = -1
@@ -293,7 +296,7 @@ function _check_eat!(food, fish, eps)
                 push!(tmp, n)
                 food.num -= 1
                 fish.hunger = max(0.0, fish.hunger - 0.05) # Reduce hunger when eating
-                if TANK_STATE.sound
+                @async if TANK_STATE.sound
                     wavplay(SOUND_EAT, FS)
                 end
             end
