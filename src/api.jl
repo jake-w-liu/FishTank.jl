@@ -1,3 +1,16 @@
+
+# API to get and set simulation parameters
+function get_params()
+    return TANK_STATE.params
+end
+
+function set_param!(name::Symbol, value)
+    if hasfield(FishTankParams, name)
+        setfield!(TANK_STATE.params, name, value)
+    else
+        error("Parameter $(name) does not exist in FishTankParams.")
+    end
+end
 """
     init(color::String="")
 

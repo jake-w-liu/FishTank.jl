@@ -32,8 +32,8 @@ function _update_food!(food, v)
     return nothing
 end
 
-function _check_update(food, eps)
-    if sum(abs.(food.pts.z - food.zd))/length(food.zd) < eps
+function _check_update(food, f)
+    if sum(abs.(food.pts.z - food.zd))/length(food.zd) < f
         return false
     else
         return true

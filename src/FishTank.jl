@@ -18,15 +18,55 @@ include("weed_fn.jl")
 include("api.jl")
 
 
+const WAV_PATH = joinpath(@__DIR__, "..", "media", "eat.wav")
+const SOUND_EAT, FS = wavread(WAV_PATH)
 
-const RESET_COUNT_THRESHOLD = 8192
-const REST_PERIOD = 1024
-const INITIAL_FISH_VELOCITY = 0.03
-const EAT_DISTANCE = 2E-2
-const FOOD_UPDATE_THRESHOLD = 1E-2
-const MOUTH_OFFSET = 3E-2
-const wav_path = joinpath(@__DIR__, "..", "media", "eat.wav")
-const SOUND_EAT, FS = wavread(wav_path)
+const RESET_COUNT_THRESH = 8192
+
+# Simulation parameters struct
+mutable struct FishTankParams
+    REST_PERIOD::Int
+    INITIAL_FISH_VELOCITY::Float64
+    FOOD_UPDATE_THRESH::Float64
+    EAT_DISTANCE::Float64
+    MOUTH_OFFSET::Float64
+    HUNGER_INC_BASE::Float64
+    HUNGER_INC_EXP::Float64
+    HUNGER_FOOD_THRESH::Float64
+    HUNGER_FAC_THRESH::Float64
+    HUNGER_EAT_FAC_EXP::Float64
+    HUNGER_EAT_FAC_BASE::Float64
+    HUNGER_EAT_MIN::Float64
+    DOT_FRONT_THRESH::Float64
+    REST_COUNT_MAX::Int
+    REST_DIR_THRESH::Float64
+    BLEND_FACTOR_ANG::Float64
+    COMBO_EXP::Float64
+end
+
+function default_params()
+    FishTankParams(
+        1024, # REST_PERIOD
+        0.03, # INITIAL_FISH_VELOCITY
+        2E-2, # FOOD_UPDATE_THRESH
+        2E-2, # EAT_DISTANCE
+        2E-2, # MOUTH_OFFSET
+        0.0005, # HUNGER_INC_BASE
+        2.8,    # HUNGER_INC_EXP
+        0.6,    # HUNGER_FOOD_THRESH
+        0.4,    # HUNGER_FAC_THRESH
+        2.3,    # HUNGER_EAT_FAC_EXP
+        1.5,    # HUNGER_EAT_FAC_BASE
+        0.001,  # HUNGER_EAT_MIN
+        0.2,    # DOT_FRONT_THRESH
+        100,    # REST_COUNT_MAX
+        0.2,    # REST_DIR_THRESH
+        0.14,   # BLEND_FACTOR_ANG
+        0.4,    # COMBO_EXP
+    )
+end
+
+const PARAMS = default_params()
 
 mutable struct TankState
     lock::Bool
@@ -90,7 +130,7 @@ end
 function _initialize_fish(color)
     pos = rand(3) .* 0.5 .+ 0.25
     ang = zeros(2)
-    v = fill(INITIAL_FISH_VELOCITY, 3)
+    v = fill(PARAMS.INITIAL_FISH_VELOCITY, 3)
     fish = _create_fish(pos, color)
     return fish, ang, v
 end
@@ -112,7 +152,7 @@ function main(color="")
 
     reset_count = 0
     rest_count = 0
-    rest_period = REST_PERIOD
+    rest_period = PARAMS.REST_PERIOD
 
     c1 = c2 = 1
     factor = 0
@@ -137,17 +177,17 @@ function main(color="")
 
                 # Increase hunger over time
                 if fish.hunger < 1.0
-                    fish.hunger = min(1.0, fish.hunger + 0.0005 + 0.0002 * (fish.hunger+1)^2.8)
+                    fish.hunger = min(1.0, fish.hunger + PARAMS.HUNGER_INC_BASE + 0.0002 * (fish.hunger+1)^PARAMS.HUNGER_INC_EXP)
                 end
 
                 target_dir = fish.dir # Default to current direction
-                if fish.hunger > 0.6 && TANK_STATE.food.num > 0 # If hungry and food is available
+                if fish.hunger > PARAMS.HUNGER_FOOD_THRESH && TANK_STATE.food.num > 0 # If hungry and food is available
                     # Find closest food particle
                     min_dist_sq = Inf
                     closest_food_idx = -1
                     for i in eachindex(TANK_STATE.food.pts.x)
                         food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- fish.pos
-                        if dot(food_vec./norm(food_vec), fish.dir./norm(fish.dir)) > 0.2 # Check if food is in front of the fish
+                        if dot(food_vec./norm(food_vec), fish.dir./norm(fish.dir)) > PARAMS.DOT_FRONT_THRESH # Check if food is in front of the fish
                             dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
                             if dist_sq < min_dist_sq
                                 min_dist_sq = dist_sq
@@ -185,7 +225,7 @@ function main(color="")
                         desired_ang2 = rad2deg(delta_yaw) # Corresponds to ang[2] (yaw)
 
                         # Blend desired angles with random angles
-                        blend_factor_ang = 0.14 # How strongly to bias towards desired angles
+                        blend_factor_ang = PARAMS.BLEND_FACTOR_ANG # How strongly to bias towards desired angles
                         ang[1] = (1 - blend_factor_ang) * (rand() * 2 * c1) + blend_factor_ang * desired_ang1
                         ang[2] = (1 - blend_factor_ang) * ((rand() * 2 + 1) * c2) + blend_factor_ang * desired_ang2
                     else
@@ -206,7 +246,7 @@ function main(color="")
                     else
                         factor = maximum([fish.pos[n], 1 - fish.pos[n]])
                     end
-                    v[n] = INITIAL_FISH_VELOCITY * factor
+                    v[n] = PARAMS.INITIAL_FISH_VELOCITY * factor
 
                     if n == 1 || n == 2
                         ang[2] *= 1.1 * sqrt((factor + 1)) # factor map to 1-2
@@ -221,8 +261,8 @@ function main(color="")
 
                 if rest_count >= rest_period
                     rest_count = 0
-                    if abs(fish.dir[3]) < 0.2
-                        rest_period = REST_PERIOD + rand(-100:100)
+                if abs(fish.dir[3]) < PARAMS.REST_DIR_THRESH
+                    rest_period = PARAMS.REST_PERIOD + rand(-100:100)
                         TANK_STATE.rest = true
                     end
                 end
@@ -230,7 +270,7 @@ function main(color="")
                 if rand(Bool)
                     rest_count += 1
                 end
-                if rest_count > 100
+                if rest_count > PARAMS.REST_COUNT_MAX
                     rest_count = 0
                     TANK_STATE.rest = false
                 else
@@ -238,17 +278,18 @@ function main(color="")
                 end
 
                 if fish.hunger < 1.0
-                    fish.hunger = min(1.0, fish.hunger + 0.0005 + 0.0002 * (fish.hunger+1)^1.1)
+                    fish.hunger = min(1.0, fish.hunger + PARAMS.HUNGER_INC_BASE + 0.0002 * (fish.hunger+1)^1.1)
                 end
             end
             println("Fish hunger: ", fish.hunger)
 
+
             _update_fish!(fish, v, ang, zmax, TANK_STATE.rest)
 
-            _check_eat!(TANK_STATE.food, fish, EAT_DISTANCE)
+            _check_eat!(TANK_STATE.food, fish, PARAMS.EAT_DISTANCE)
 
-            if _check_update(TANK_STATE.food, FOOD_UPDATE_THRESHOLD)
-                _update_food!(TANK_STATE.food, FOOD_UPDATE_THRESHOLD)
+            if _check_update(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
+                _update_food!(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
             end
 
             if length(fig.plot.data) - 5 < TANK_STATE.weedCount
@@ -265,7 +306,7 @@ function main(color="")
             sleep(0.1)
 
             reset_count += 1
-            if reset_count >= RESET_COUNT_THRESHOLD # reset
+            if reset_count >= RESET_COUNT_THRESH # reset
 
                 world_copy = copy(world)
                 purge!(fig)
@@ -296,8 +337,8 @@ end
 
 function _check_eat!(food, fish, eps)
     tmp = Int[]
-    mouth_pos = fish.pos .+ MOUTH_OFFSET .* fish.dir
-    if fish.hunger < 0.6 && fish.combo > 0
+    mouth_pos = fish.pos .+ PARAMS.MOUTH_OFFSET .* fish.dir
+    if fish.hunger < PARAMS.HUNGER_FOOD_THRESH && fish.combo > 0
         fish.combo = 0
     end
     if food.num != 0
@@ -306,12 +347,11 @@ function _check_eat!(food, fish, eps)
                 push!(tmp, n)
                 food.num -= 1
 
-                fac = 1.0
-                if fish.hunger > 0.4
-                    fac = 1.5 * (2 - (fish.hunger - 0.4) / 0.6)^2.3
+                if fish.hunger > PARAMS.HUNGER_FAC_THRESH
+                    fac = PARAMS.HUNGER_EAT_FAC_BASE * (2 - (fish.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 -  PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
                 end
 
-                fish.hunger = max(0.0, fish.hunger - 0.05 * (fish.combo)^(0.4) * fac - 0.001) # Reduce hunger when eating
+                fish.hunger = max(0.0, fish.hunger - 0.05 * (fish.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
                 
                 @async if TANK_STATE.sound
                     wavplay(SOUND_EAT, FS)
