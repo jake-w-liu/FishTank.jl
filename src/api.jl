@@ -68,18 +68,14 @@ Arguments:
 function feed(n::Int=10)
     @assert n >= 0
 
-    x = rand(n) .* 0.8 .+ 0.1
-    y = rand(n) .* 0.8 .+ 0.1
-    z = ones(n)
-
-    zd = rand(n) .* 0.8 .+ 0.1
+    food_tmp = _create_food(n)
 
     TANK_STATE.food.num += n
-    TANK_STATE.food.zd = [TANK_STATE.food.zd; zd]
+    TANK_STATE.food.zd = [TANK_STATE.food.zd; food_tmp.zd]
 
-    TANK_STATE.food.pts.x = [TANK_STATE.food.pts.x; x]
-    TANK_STATE.food.pts.y = [TANK_STATE.food.pts.y; y]
-    TANK_STATE.food.pts.z = [TANK_STATE.food.pts.z; z]
+    TANK_STATE.food.pts.x = [TANK_STATE.food.pts.x; food_tmp.pts.x]
+    TANK_STATE.food.pts.y = [TANK_STATE.food.pts.y; food_tmp.pts.y]
+    TANK_STATE.food.pts.z = [TANK_STATE.food.pts.z; food_tmp.pts.z]
     return nothing
 end
 

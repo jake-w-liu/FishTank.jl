@@ -17,13 +17,16 @@ include("food_fn.jl")
 include("weed_fn.jl")
 include("api.jl")
 
+
+
 const RESET_COUNT_THRESHOLD = 8192
 const REST_PERIOD = 1024
 const INITIAL_FISH_VELOCITY = 0.03
 const EAT_DISTANCE = 2E-2
 const FOOD_UPDATE_THRESHOLD = 1E-2
 const MOUTH_OFFSET = 3E-2
-const SOUND_EAT, FS = wavread("media/eat.wav")
+const wav_path = joinpath(@__DIR__, "..", "media", "eat.wav")
+const SOUND_EAT, FS = wavread(wav_path)
 
 mutable struct TankState
     lock::Bool
@@ -136,7 +139,7 @@ function main(color="")
                 if fish.hunger < 1.0
                     fish.hunger += 0.001
                 end
-                # println("Fish hunger: ", fish.hunger)
+                println("Fish hunger: ", fish.hunger)
 
                 target_dir = fish.dir # Default to current direction
                 if fish.hunger > 0.6 && TANK_STATE.food.num > 0 # If hungry and food is available
@@ -295,7 +298,12 @@ function _check_eat!(food, fish, eps)
             if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
                 push!(tmp, n)
                 food.num -= 1
-                fish.hunger = max(0.0, fish.hunger - 0.05) # Reduce hunger when eating
+                if (fish.hunger - 0.6) > 0
+                    fac = 4 * (1 - (fish.hunger - 0.6) / (1 - 0.6)) + 1
+                else
+                    fac = 5
+                end
+                fish.hunger = max(0.0, fish.hunger - 0.05 * fac) # Reduce hunger when eating
                 @async if TANK_STATE.sound
                     wavplay(SOUND_EAT, FS)
                 end
