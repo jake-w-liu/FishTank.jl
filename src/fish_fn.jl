@@ -5,6 +5,7 @@ mutable struct Fish
     dir::Vector{Float64}
     hunger::Float64
     target_food_idx::Union{Int, Nothing}
+    combo::Int
 end
 
 function _create_fish(pos, color="", opc=0.9)
@@ -24,7 +25,7 @@ function _create_fish(pos, color="", opc=0.9)
     body = ellipsoids(pos, [a, b, c], color; opc=opc, tres=7, pres=16, ah=0)
     tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color; opc=opc * 0.7)
 
-    fish = Fish(body, tail, pos, [1.0, 0.0, 0.0], 1, nothing)
+    fish = Fish(body, tail, pos, [1.0, 0.0, 0.0], 1, nothing, 0)
 
     return fish
 end

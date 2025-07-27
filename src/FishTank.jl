@@ -137,9 +137,8 @@ function main(color="")
 
                 # Increase hunger over time
                 if fish.hunger < 1.0
-                    fish.hunger += 0.001
+                    fish.hunger = min(1.0, fish.hunger + 0.0005 + 0.0002 * (fish.hunger+1)^2.8)
                 end
-                println("Fish hunger: ", fish.hunger)
 
                 target_dir = fish.dir # Default to current direction
                 if fish.hunger > 0.6 && TANK_STATE.food.num > 0 # If hungry and food is available
@@ -237,7 +236,12 @@ function main(color="")
                 else
                     sleep(0.1)
                 end
+
+                if fish.hunger < 1.0
+                    fish.hunger = min(1.0, fish.hunger + 0.0005 + 0.0002 * (fish.hunger+1)^1.1)
+                end
             end
+            println("Fish hunger: ", fish.hunger)
 
             _update_fish!(fish, v, ang, zmax, TANK_STATE.rest)
 
@@ -293,20 +297,27 @@ end
 function _check_eat!(food, fish, eps)
     tmp = Int[]
     mouth_pos = fish.pos .+ MOUTH_OFFSET .* fish.dir
+    if fish.hunger < 0.6 && fish.combo > 0
+        fish.combo = 0
+    end
     if food.num != 0
         @inbounds for n in eachindex(food.pts.x)
             if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
                 push!(tmp, n)
                 food.num -= 1
-                if (fish.hunger - 0.6) > 0
-                    fac = 4 * (1 - (fish.hunger - 0.6) / (1 - 0.6)) + 1
-                else
-                    fac = 5
+
+                fac = 1.0
+                if fish.hunger > 0.4
+                    fac = 1.5 * (2 - (fish.hunger - 0.4) / 0.6)^2.3
                 end
-                fish.hunger = max(0.0, fish.hunger - 0.05 * fac) # Reduce hunger when eating
+
+                fish.hunger = max(0.0, fish.hunger - 0.05 * (fish.combo)^(0.4) * fac - 0.001) # Reduce hunger when eating
+                
                 @async if TANK_STATE.sound
                     wavplay(SOUND_EAT, FS)
                 end
+
+                fish.combo += 1
             end
         end
     end
