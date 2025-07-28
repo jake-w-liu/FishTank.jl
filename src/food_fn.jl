@@ -7,8 +7,8 @@ end
 function _create_food(n::Int)
     @assert n >= 0
 
-    x = rand(n) .* 0.8 .+ 0.1
-    y = rand(n) .* 0.8 .+ 0.1
+    x = rand(n) .* 0.7 .+ 0.15
+    y = rand(n) .* 0.7 .+ 0.15
     z = ones(n)
 
     zd = rand(n) .* 0.7 .+ 0.25

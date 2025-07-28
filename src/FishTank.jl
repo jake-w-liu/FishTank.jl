@@ -37,6 +37,7 @@ mutable struct FishTankParams
 	HUNGER_EAT_FAC_EXP::Float64
 	HUNGER_EAT_FAC_BASE::Float64
 	HUNGER_EAT_MIN::Float64
+    HUNGER_EAT_BASE::Float64
 	DOT_FRONT_THRESH::Float64
 	REST_COUNT_MAX::Int
 	REST_DIR_THRESH::Float64
@@ -48,17 +49,18 @@ function default_params()
 	FishTankParams(
 		1024, # REST_PERIOD
 		0.03, # INITIAL_FISH_VELOCITY
-		2E-2, # FOOD_UPDATE_THRESH
-		1E-2, # EAT_DISTANCE
-		0.0005, # HUNGER_INC_BASE
-        0.0002, # HUNGER_INC_FAC
-		2.8,    # HUNGER_INC_EXP
+		0.02, # FOOD_UPDATE_THRESH
+		0.015, # EAT_DISTANCE
+		0.0001, # HUNGER_INC_BASE
+        0.0001, # HUNGER_INC_FAC
+		1.2,    # HUNGER_INC_EXP
 		0.6,    # HUNGER_FOOD_THRESH
 		0.4,    # HUNGER_FAC_THRESH
 		2.3,    # HUNGER_EAT_FAC_EXP
-		1.5,    # HUNGER_EAT_FAC_BASE
+		1.1,    # HUNGER_EAT_FAC_BASE
 		0.001,  # HUNGER_EAT_MIN
-		0.2,    # DOT_FRONT_THRESH
+        0.05, # HUNGER_EAT_BASE
+		0.707,    # DOT_FRONT_THRESH
 		100,    # REST_COUNT_MAX
 		0.2,    # REST_DIR_THRESH
 		0.14,   # BLEND_FACTOR_ANG
@@ -185,9 +187,10 @@ function main(color = "")
 					# Find closest food particle
 					min_dist_sq = Inf
 					closest_food_idx = -1
+                    dot_th_v = PARAMS.DOT_FRONT_THRESH - PARAMS.DOT_FRONT_THRESH * (fish.hunger -  PARAMS.HUNGER_FOOD_THRESH) / (1 -  PARAMS.HUNGER_FOOD_THRESH)  # Adjust threshold based on hunger
 					for i in eachindex(TANK_STATE.food.pts.x)
 						food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- fish.pos
-						if dot(food_vec ./ norm(food_vec), fish.dir ./ norm(fish.dir)) > PARAMS.DOT_FRONT_THRESH # Check if food is in front of the fish
+						if dot(food_vec ./ norm(food_vec), fish.dir ./ norm(fish.dir)) > dot_th_v # Check if food is in front of the fish
 							dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
 							if dist_sq < min_dist_sq
 								min_dist_sq = dist_sq
@@ -342,18 +345,17 @@ function _check_eat!(food, fish, eps)
 			if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
 				push!(tmp, n)
 				food.num -= 1
-
+                
 				if fish.hunger > PARAMS.HUNGER_FAC_THRESH
 					fac = PARAMS.HUNGER_EAT_FAC_BASE * (2 - (fish.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 - PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
 				end
 
-				fish.hunger = max(0.0, fish.hunger - 0.05 * (fish.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
+				fish.hunger = max(0.0, fish.hunger - PARAMS.HUNGER_EAT_BASE * (fish.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
 
 				@async if TANK_STATE.sound
 					wavplay(SOUND_EAT, FS)
 				end
-
-				fish.combo += 1
+                fish.combo += 1
 			end
 		end
 	end
