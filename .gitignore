@@ -2,3 +2,4 @@
 Manifest.toml
 paper
 testpkg.jl
+testfish.jl

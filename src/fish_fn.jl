@@ -83,8 +83,6 @@ function _update_fish!(fish, v, ang, zmax, rest)
     end
 
     vec = [fish.body.x[1] - fish.pos[1], fish.body.y[1] - fish.pos[2], fish.body.z[1] - fish.pos[3]]
-    # vec = fish.dir
-
 
     tail_dir = [fish.tail.x[1], fish.tail.y[1], fish.tail.z[1]] .- [fish.tail.x[4], fish.tail.y[4], fish.tail.z[4]]
     dp = dot(tail_dir, fish.dir) / norm(tail_dir) / norm(fish.dir)
@@ -93,7 +91,7 @@ function _update_fish!(fish, v, ang, zmax, rest)
     end
     tail_ang = sign(dot(cross(tail_dir, fish.dir), vec)) * acosd(dp) 
 
-    grot!(fish.tail, 5 * rand()-0.5 + tail_ang, vec, fish.pos)
+    grot!(fish.tail, 5 * rand()-2.5 + tail_ang, vec, fish.pos)
 
     return nothing
 end
