@@ -26,6 +26,7 @@ const RESET_COUNT_THRESH = 8192
 # Simulation parameters struct
 mutable struct FishTankParams
 	INITIAL_FISH_VELOCITY::Float64
+    SINK_VELOCITY::Float64
 	FOOD_UPDATE_THRESH::Float64
 	EAT_DISTANCE::Float64
 	BLEND_FACTOR_ANG::Float64
@@ -48,6 +49,7 @@ end
 function default_params()
 	FishTankParams(
 		0.03, # INITIAL_FISH_VELOCITY
+        0.02, # SINK_VELOCITY
 		0.02, # FOOD_UPDATE_THRESH
 		0.015, # EAT_DISTANCE
 		0.14,   # BLEND_FACTOR_ANG
@@ -155,7 +157,7 @@ function main(color = "")
 	reset_count = 0
 	rest_count = 0
 
-	c1 = c2 = 1
+	s1 = s2 = 1
 	factor = 0
 
 	while true
@@ -167,7 +169,7 @@ function main(color = "")
 		while TANK_STATE.running
 
 			if TANK_STATE.viewTrig
-				_set_view(fig, TANK_STATE.Az, TANK_STATE.El)
+				set_view!(fig, TANK_STATE.Az, TANK_STATE.El)
 				TANK_STATE.viewTrig = false
 			end
 
@@ -180,6 +182,7 @@ function main(color = "")
 
 			if !TANK_STATE.rest
 				rest_count += 1
+                # change sign intertia
 
 				target_dir = fish.dir # Default to current direction
 				if fish.hunger > PARAMS.HUNGER_FOOD_THRESH && TANK_STATE.food.num > 0 # If hungry and food is available
@@ -228,17 +231,23 @@ function main(color = "")
 
 						# Blend desired angles with random angles
 						blend_factor_ang = PARAMS.BLEND_FACTOR_ANG # How strongly to bias towards desired angles
-						ang[1] = (1 - blend_factor_ang) * (rand() * 2 * c1) + blend_factor_ang * desired_ang1
-						ang[2] = (1 - blend_factor_ang) * ((rand() * 2 + 1) * c2) + blend_factor_ang * desired_ang2
+						ang[1] = (1 - blend_factor_ang) * (rand() * 2 * s1) + blend_factor_ang * desired_ang1
+						ang[2] = (1 - blend_factor_ang) * ((rand() * 2 + 1) * s2) + blend_factor_ang * desired_ang2
 					else
-						# If no food found or not hungry, use original random angles
-						ang[1] = rand() * 2 * c1
-						ang[2] = (rand() * 2 + 1) * c2
+						# If hungry but no food in target zone, use original random angles
+                        s1 = s1 * sign(rand(Normal(0.5, 0.5)))
+                        s2 = s2 * sign(rand(Normal(0.5, 0.5)))
+
+						ang[1] = rand() * 2 * s1
+						ang[2] = (rand() * 2 + 1) * s2
 					end
 				else
 					# If not hungry or no food, use original random angles
-					ang[1] = rand() * 2 * c1
-					ang[2] = (rand() * 2 + 1) * c2
+                    s1 = s1 * sign(rand(Normal(0.5, 0.5)))
+                    s2 = s2 * sign(rand(Normal(0.5, 0.5)))
+
+					ang[1] = rand() * 2 * s1
+					ang[2] = (rand() * 2 + 1) * s2
 				end
 
 				# adjust fish speed according to postion
@@ -258,7 +267,7 @@ function main(color = "")
 					end
 				end
 				if abs(fish.dir[3]) > sqrt(3) / 2
-					ang[1] = -2 * sign(fish.dir[3]) * abs(ang[1])
+					ang[1] = -1.2 * sign(fish.dir[3]) * abs(ang[1])
 				end
 
 				if rest_count >= PARAMS.REST_PERIOD
@@ -278,7 +287,7 @@ function main(color = "")
 					sleep(0.1)
 				end
 			end
-			println("Fish hunger: ", fish.hunger)
+			# println("Fish hunger: ", fish.hunger)
 
 
 			_update_fish!(fish, v, ang, zmax, TANK_STATE.rest)
@@ -286,7 +295,7 @@ function main(color = "")
 			_check_eat!(TANK_STATE.food, fish, PARAMS.EAT_DISTANCE)
 
 			if _check_update(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
-				_update_food!(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
+				_update_food!(TANK_STATE.food, PARAMS.SINK_VELOCITY)
 			end
 
 			if length(fig.plot.data) - 5 < TANK_STATE.weedCount
@@ -388,17 +397,6 @@ function _create_landscape()
 		),
 		hoverinfo = "none",
 	)
-end
-
-function _set_view(fig, az, el)
-
-	x = 1.25 * sqrt(3) * cosd(el) * cosd(az)
-	y = 1.25 * sqrt(3) * cosd(el) * sind(az)
-	z = 1.25 * sqrt(3) * sind(el)
-
-	fig.plot.layout.scene_camera[:eye][:x] = x
-	fig.plot.layout.scene_camera[:eye][:y] = y
-	fig.plot.layout.scene_camera[:eye][:z] = z
 end
 
 end
