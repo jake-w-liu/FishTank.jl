@@ -17,10 +17,9 @@ function _create_fish(pos, color="", opc=0.9)
         color = "rgb($r, $g, $b)"
     end
 
-    fac = 50
-    a = 3 / fac
-    b = 0.8 / fac
-    c = 1 / fac
+    a = 0.06
+    b = 0.016
+    c = 0.02
 
     body = ellipsoids(pos, [a, b, c], color; opc=opc, tres=7, pres=16, ah=0)
     tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color; opc=opc * 0.7)
@@ -53,7 +52,7 @@ function _update_fish!(fish, v, ang, zmax, rest)
         gtrans!(fish.tail, v .* fish.dir)
 
         # change direction if close to wall
-        eps = 0.075
+        eps = 0.06
         if (abs(fish.pos[1]) < eps && fish.dir[1] < 0) || (abs(fish.pos[1] - 1) < eps && fish.dir[1] > 0)
             fish.dir[1] = -fish.dir[1]
             @inbounds for n in eachindex(fish.body.x)
@@ -84,6 +83,8 @@ function _update_fish!(fish, v, ang, zmax, rest)
     end
 
     vec = [fish.body.x[1] - fish.pos[1], fish.body.y[1] - fish.pos[2], fish.body.z[1] - fish.pos[3]]
+    # vec = fish.dir
+
     tail_pos = []
     for n in eachindex(fish.tail.x)
         push!(tail_pos, [fish.tail.x[n], fish.tail.y[n], fish.tail.z[n]])
