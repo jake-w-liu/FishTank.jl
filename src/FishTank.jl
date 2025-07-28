@@ -25,10 +25,10 @@ const RESET_COUNT_THRESH = 8192
 
 # Simulation parameters struct
 mutable struct FishTankParams
-	REST_PERIOD::Int
 	INITIAL_FISH_VELOCITY::Float64
 	FOOD_UPDATE_THRESH::Float64
 	EAT_DISTANCE::Float64
+	BLEND_FACTOR_ANG::Float64
 	HUNGER_INC_BASE::Float64
     HUNGER_INC_FAC::Float64
 	HUNGER_INC_EXP::Float64
@@ -38,19 +38,19 @@ mutable struct FishTankParams
 	HUNGER_EAT_FAC_BASE::Float64
 	HUNGER_EAT_MIN::Float64
     HUNGER_EAT_BASE::Float64
+	COMBO_EXP::Float64
 	DOT_FRONT_THRESH::Float64
+	REST_PERIOD::Int
 	REST_COUNT_MAX::Int
 	REST_DIR_THRESH::Float64
-	BLEND_FACTOR_ANG::Float64
-	COMBO_EXP::Float64
 end
 
 function default_params()
 	FishTankParams(
-		1024, # REST_PERIOD
 		0.03, # INITIAL_FISH_VELOCITY
 		0.02, # FOOD_UPDATE_THRESH
 		0.015, # EAT_DISTANCE
+		0.14,   # BLEND_FACTOR_ANG
 		0.0001, # HUNGER_INC_BASE
         0.0001, # HUNGER_INC_FAC
 		1.2,    # HUNGER_INC_EXP
@@ -60,11 +60,11 @@ function default_params()
 		1.1,    # HUNGER_EAT_FAC_BASE
 		0.001,  # HUNGER_EAT_MIN
         0.05, # HUNGER_EAT_BASE
+		0.4,    # COMBO_EXP
 		0.707,    # DOT_FRONT_THRESH
+		1024, # REST_PERIOD
 		100,    # REST_COUNT_MAX
 		0.2,    # REST_DIR_THRESH
-		0.14,   # BLEND_FACTOR_ANG
-		0.4,    # COMBO_EXP
 	)
 end
 
@@ -154,7 +154,6 @@ function main(color = "")
 
 	reset_count = 0
 	rest_count = 0
-	rest_period = PARAMS.REST_PERIOD
 
 	c1 = c2 = 1
 	factor = 0
@@ -262,10 +261,9 @@ function main(color = "")
 					ang[1] = -2 * sign(fish.dir[3]) * abs(ang[1])
 				end
 
-				if rest_count >= rest_period
+				if rest_count >= PARAMS.REST_PERIOD
 					rest_count = 0
 					if abs(fish.dir[3]) < PARAMS.REST_DIR_THRESH
-						rest_period = PARAMS.REST_PERIOD + rand(-100:100)
 						TANK_STATE.rest = true
 					end
 				end
