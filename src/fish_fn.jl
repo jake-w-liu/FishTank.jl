@@ -85,11 +85,8 @@ function _update_fish!(fish, v, ang, zmax, rest)
     vec = [fish.body.x[1] - fish.pos[1], fish.body.y[1] - fish.pos[2], fish.body.z[1] - fish.pos[3]]
     # vec = fish.dir
 
-    tail_pos = []
-    for n in eachindex(fish.tail.x)
-        push!(tail_pos, [fish.tail.x[n], fish.tail.y[n], fish.tail.z[n]])
-    end
-    tail_dir = tail_pos[1] .- tail_pos[4]
+
+    tail_dir = [fish.tail.x[1], fish.tail.y[1], fish.tail.z[1]] .- [fish.tail.x[4], fish.tail.y[4], fish.tail.z[4]]
     dp = dot(tail_dir, fish.dir) / norm(tail_dir) / norm(fish.dir)
     if abs(dp) > 1
         dp = sign(dp) * 1

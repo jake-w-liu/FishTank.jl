@@ -29,7 +29,6 @@ mutable struct FishTankParams
 	INITIAL_FISH_VELOCITY::Float64
 	FOOD_UPDATE_THRESH::Float64
 	EAT_DISTANCE::Float64
-	MOUTH_OFFSET::Float64
 	HUNGER_INC_BASE::Float64
     HUNGER_INC_FAC::Float64
 	HUNGER_INC_EXP::Float64
@@ -50,8 +49,7 @@ function default_params()
 		1024, # REST_PERIOD
 		0.03, # INITIAL_FISH_VELOCITY
 		2E-2, # FOOD_UPDATE_THRESH
-		2E-2, # EAT_DISTANCE
-		2E-2, # MOUTH_OFFSET
+		1E-2, # EAT_DISTANCE
 		0.0005, # HUNGER_INC_BASE
         0.0002, # HUNGER_INC_FAC
 		2.8,    # HUNGER_INC_EXP
@@ -335,7 +333,7 @@ end
 
 function _check_eat!(food, fish, eps)
 	tmp = Int[]
-	mouth_pos = fish.pos .+ PARAMS.MOUTH_OFFSET .* fish.dir
+	mouth_pos = fish.pos .+ 0.03 .* fish.dir
 	if fish.hunger < PARAMS.HUNGER_FOOD_THRESH && fish.combo > 0
 		fish.combo = 0
 	end
