@@ -137,6 +137,35 @@ Set the [az/el view angle](https://matplotlib.org/stable/api/toolkits/mplot3d/vi
 
 ___
 
+```julia
+hunger()
+```
+Check the hunger level of the fish.
+
+___
+
+```julia
+resting()
+```
+Check if the fish is resting.
+
+___
+
+```julia
+get_params()
+```
+Get all the parameters of the simulation.
+
+___
+
+```julia
+set_param!(name::Symbol, value)
+```
+Set a parameter of the simulation. For example, to set the fish velocity to 0.05, use `set_param!(:INITIAL_FISH_VELOCITY, 0.05)`.
+
+___
+
+
 
 
 

@@ -1,12 +1,12 @@
 
 # API to get and set simulation parameters
 function get_params()
-    return TANK_STATE.params
+    return PARAMS
 end
 
 function set_param!(name::Symbol, value)
     if hasfield(FishTankParams, name)
-        setfield!(TANK_STATE.params, name, value)
+        setfield!(PARAMS, name, value)
     else
         error("Parameter $(name) does not exist in FishTankParams.")
     end
@@ -99,6 +99,24 @@ Check the amount of food in the tank.
 """
 function check()
     return TANK_STATE.food.num
+end
+
+"""
+    hunger()
+
+Check the hunger level of the fish.
+"""
+function hunger()
+    return fish.hunger
+end
+
+"""
+    resting()
+
+Check if the fish is resting.
+"""
+function resting()
+    return TANK_STATE.rest
 end
 
 """

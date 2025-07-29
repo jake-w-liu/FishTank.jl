@@ -1,6 +1,6 @@
 module FishTank
 
-export init, pause, go, mute, unmute, check, feed, plant, replot, look
+export init, pause, go, mute, unmute, check, feed, plant, replot, look, get_params, set_param!, hunger, resting
 
 using PlotlyJS
 using PlotlyGeometries
