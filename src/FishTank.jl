@@ -77,7 +77,6 @@ mutable struct TankState
 	running::Bool
 	sound::Bool
 	plotTrig::Bool
-	rest::Bool
 	food::Food
 	weedList::Vector{Weed}
 	weedCount::Int
@@ -87,7 +86,7 @@ mutable struct TankState
 end
 
 function TankState()
-	TankState(false, true, true, false, false, _create_food(0), Vector{Weed}(), 0, 28.0, 12.0, false)
+	TankState(false, true, true, false, _create_food(0), Vector{Weed}(), 0, 28.0, 12.0, false)
 end
 
 const TANK_STATE = TankState()
@@ -133,23 +132,31 @@ end
 
 function _initialize_fish(color)
 	pos = rand(3) .* 0.5 .+ 0.25
-	ang = zeros(2)
-	v = fill(PARAMS.INITIAL_FISH_VELOCITY, 3)
+	
 	fish = _create_fish(pos, color)
 	return fish, ang, v
 end
 
+const FISH = _create_fish(rand(3) .* 0.5 .+ 0.25, "")
+
 function main(color = "")
 
+    # fish coloring
+    if color == ""
+        r = round(Int, rand() * 255)
+        g = round(Int, rand() * 255)
+        b = round(Int, rand() * 255)
+        color = "rgb($r, $g, $b)"
+    end
+    FISH.body.color = color
+    FISH.tail.color = color
 
 	# tank initialzation
 	tank, layout = _initialize_tank()
-
-	# fish initialization
-	fish, ang, v = _initialize_fish(color)
+    
 	zmax, landscape = _create_landscape()
 
-	world = [tank, fish.body, fish.tail, TANK_STATE.food.pts, landscape]
+	world = [tank, FISH.body, FISH.tail, TANK_STATE.food.pts, landscape]
 	fig = plot(world, layout)
 	task_plot = @async display(fig)
 	sleep(0.1)
@@ -159,6 +166,9 @@ function main(color = "")
 
 	s1 = s2 = 1
 	factor = 0
+
+    ang = zeros(2)
+	v = fill(PARAMS.INITIAL_FISH_VELOCITY, 3)
 
 	while true
 		if TANK_STATE.sound
@@ -176,24 +186,24 @@ function main(color = "")
 			wait(task_plot)
 
 			# Increase hunger over time
-			if fish.hunger < 1.0
-				fish.hunger = min(1.0, fish.hunger + PARAMS.HUNGER_INC_BASE +PARAMS.HUNGER_INC_FAC * (fish.hunger+1)^PARAMS.HUNGER_INC_EXP)
+			if FISH.hunger < 1.0
+				FISH.hunger = min(1.0, FISH.hunger + PARAMS.HUNGER_INC_BASE +PARAMS.HUNGER_INC_FAC * (FISH.hunger+1)^PARAMS.HUNGER_INC_EXP)
 			end
 
-			if !TANK_STATE.rest
+			if !FISH.rest
 				rest_count += 1
                 # change sign intertia
 
-				target_dir = fish.dir # Default to current direction
-				if fish.hunger > PARAMS.HUNGER_FOOD_THRESH && TANK_STATE.food.num > 0 # If hungry and food is available
+				target_dir = FISH.dir # Default to current direction
+				if FISH.hunger > PARAMS.HUNGER_FOOD_THRESH && TANK_STATE.food.num > 0 # If hungry and food is available
 					# Find closest food particle
 					min_dist_sq = Inf
 					closest_food_idx = -1
-                    dot_th_v = PARAMS.DOT_FRONT_THRESH - PARAMS.DOT_FRONT_THRESH * (fish.hunger -  PARAMS.HUNGER_FOOD_THRESH) / (1 -  PARAMS.HUNGER_FOOD_THRESH)  # Adjust threshold based on hunger
+                    dot_th_v = PARAMS.DOT_FRONT_THRESH - PARAMS.DOT_FRONT_THRESH * (FISH.hunger -  PARAMS.HUNGER_FOOD_THRESH) / (1 -  PARAMS.HUNGER_FOOD_THRESH)  # Adjust threshold based on hunger
 					for i in eachindex(TANK_STATE.food.pts.x)
-						food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- fish.pos
-						if dot(food_vec ./ norm(food_vec), fish.dir ./ norm(fish.dir)) > dot_th_v # Check if food is in front of the fish
-							dist_sq = (fish.pos[1] - TANK_STATE.food.pts.x[i])^2 + (fish.pos[2] - TANK_STATE.food.pts.y[i])^2 + (fish.pos[3] - TANK_STATE.food.pts.z[i])^2
+						food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- FISH.pos
+						if dot(food_vec ./ norm(food_vec), FISH.dir ./ norm(FISH.dir)) > dot_th_v # Check if food is in front of the fish
+							dist_sq = (FISH.pos[1] - TANK_STATE.food.pts.x[i])^2 + (FISH.pos[2] - TANK_STATE.food.pts.y[i])^2 + (FISH.pos[3] - TANK_STATE.food.pts.z[i])^2
 							if dist_sq < min_dist_sq
 								min_dist_sq = dist_sq
 								closest_food_idx = i
@@ -205,12 +215,12 @@ function main(color = "")
 
 					if closest_food_idx != -1
 						food_pos = [TANK_STATE.food.pts.x[closest_food_idx], TANK_STATE.food.pts.y[closest_food_idx], TANK_STATE.food.pts.z[closest_food_idx]]
-						target_dir = food_pos .- fish.pos
+						target_dir = food_pos .- FISH.pos
 						target_dir .= target_dir ./ norm(target_dir) # Normalize target direction
 
 						# Calculate desired angles to steer towards target_dir
 						# Yaw angle (rotation around Z-axis)
-						current_yaw = atan(fish.dir[2], fish.dir[1])
+						current_yaw = atan(FISH.dir[2], FISH.dir[1])
 						target_yaw = atan(target_dir[2], target_dir[1])
 						delta_yaw = target_yaw - current_yaw
 						if delta_yaw > pi
@@ -219,9 +229,9 @@ function main(color = "")
 							delta_yaw += 2 * pi
 						end
 
-						# Pitch angle (rotation around Y-axis, assuming fish.dir is in XY plane for this)
+						# Pitch angle (rotation around Y-axis, assuming FISH.dir is in XY plane for this)
 						# This is a simplification, a more robust pitch would involve cross products
-						current_pitch = atan(fish.dir[3], sqrt(fish.dir[1]^2 + fish.dir[2]^2))
+						current_pitch = atan(FISH.dir[3], sqrt(FISH.dir[1]^2 + FISH.dir[2]^2))
 						target_pitch = atan(target_dir[3], sqrt(target_dir[1]^2 + target_dir[2]^2))
 						delta_pitch = target_pitch - current_pitch
 
@@ -252,10 +262,10 @@ function main(color = "")
 
 				# adjust fish speed according to postion
 				@inbounds for n ∈ 1:3
-					if (fish.pos[n] - 0.5) * fish.dir[n] > 0
-						factor = minimum([fish.pos[n], 1 - fish.pos[n]])
+					if (FISH.pos[n] - 0.5) * FISH.dir[n] > 0
+						factor = minimum([FISH.pos[n], 1 - FISH.pos[n]])
 					else
-						factor = maximum([fish.pos[n], 1 - fish.pos[n]])
+						factor = maximum([FISH.pos[n], 1 - FISH.pos[n]])
 					end
 					v[n] = PARAMS.INITIAL_FISH_VELOCITY * factor
 
@@ -266,14 +276,14 @@ function main(color = "")
 						ang[1] *= 1.2 * (factor + 1)
 					end
 				end
-				if abs(fish.dir[3]) > sqrt(3) / 2
-					ang[1] = -1.2 * sign(fish.dir[3]) * abs(ang[1])
+				if abs(FISH.dir[3]) > sqrt(3) / 2
+					ang[1] = -1.2 * sign(FISH.dir[3]) * abs(ang[1])
 				end
 
 				if rest_count >= PARAMS.REST_PERIOD
 					rest_count = 0
-					if abs(fish.dir[3]) < PARAMS.REST_DIR_THRESH
-						TANK_STATE.rest = true
+					if abs(FISH.dir[3]) < PARAMS.REST_DIR_THRESH
+						FISH.rest = true
 					end
 				end
 			else
@@ -282,19 +292,18 @@ function main(color = "")
 				end
 				if rest_count > PARAMS.REST_COUNT_MAX
 					rest_count = 0
-					TANK_STATE.rest = false
+					FISH.rest = false
 				else
 					sleep(0.1)
 				end
 			end
-			# println("Fish hunger: ", fish.hunger)
+			# println("Fish hunger: ", FISH.hunger)
 
+			_update_fish!(FISH, v, ang, zmax)
 
-			_update_fish!(fish, v, ang, zmax, TANK_STATE.rest)
+			_check_eat!()
 
-			_check_eat!(TANK_STATE.food, fish, PARAMS.EAT_DISTANCE)
-
-			if _check_update(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
+			if _check_food_update(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
 				_update_food!(TANK_STATE.food, PARAMS.SINK_VELOCITY)
 			end
 
@@ -341,39 +350,74 @@ function main(color = "")
 	end
 end
 
-function _check_eat!(food, fish, eps)
+function _check_eat!()
 	tmp = Int[]
-	mouth_pos = fish.pos .+ 0.03 .* fish.dir
-	if fish.hunger < PARAMS.HUNGER_FOOD_THRESH && fish.combo > 0
-		fish.combo = 0
+	mouth_pos = FISH.pos .+ 0.03 .* FISH.dir
+	if FISH.hunger < PARAMS.HUNGER_FOOD_THRESH && FISH.combo > 0
+		FISH.combo = 0
 	end
-	if food.num != 0
-		@inbounds for n in eachindex(food.pts.x)
-			if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
+	if TANK_STATE.food.num != 0
+		@inbounds for n in eachindex(TANK_STATE.food.pts.x)
+			if abs2(mouth_pos[1] - TANK_STATE.food.pts.x[n]) + abs2(mouth_pos[2] - TANK_STATE.food.pts.y[n]) + abs2(mouth_pos[3] .- TANK_STATE.food.pts.z[n]) < PARAMS.EAT_DISTANCE^2
 				push!(tmp, n)
-				food.num -= 1
+				TANK_STATE.food.num -= 1
+                FISH.combo += 1
                 
-				if fish.hunger > PARAMS.HUNGER_FAC_THRESH
-					fac = PARAMS.HUNGER_EAT_FAC_BASE * (2 - (fish.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 - PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
+				if FISH.hunger > PARAMS.HUNGER_FAC_THRESH
+					fac = PARAMS.HUNGER_EAT_FAC_BASE * (2 - (FISH.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 - PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
 				end
 
-				fish.hunger = max(0.0, fish.hunger - PARAMS.HUNGER_EAT_BASE * (fish.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
+				FISH.hunger = max(0.0, FISH.hunger - PARAMS.HUNGER_EAT_BASE * (FISH.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
 
 				@async if TANK_STATE.sound
 					wavplay(SOUND_EAT, FS)
 				end
-                fish.combo += 1
 			end
 		end
 	end
 
 	if length(tmp) != 0
-		deleteat!(food.pts.x, tmp)
-		deleteat!(food.pts.y, tmp)
-		deleteat!(food.pts.z, tmp)
-		deleteat!(food.zd, tmp)
+		deleteat!(TANK_STATE.food.pts.x, tmp)
+		deleteat!(TANK_STATE.food.pts.y, tmp)
+		deleteat!(TANK_STATE.food.pts.z, tmp)
+		deleteat!(TANK_STATE.food.zd, tmp)
 	end
+    return nothing
 end
+
+# function _check_eat!(food, fish, eps)
+# 	tmp = Int[]
+# 	mouth_pos = fish.pos .+ 0.03 .* fish.dir
+# 	if fish.hunger < PARAMS.HUNGER_FOOD_THRESH && fish.combo > 0
+# 		fish.combo = 0
+# 	end
+# 	if food.num != 0
+# 		@inbounds for n in eachindex(food.pts.x)
+# 			if abs2(mouth_pos[1] - food.pts.x[n]) + abs2(mouth_pos[2] - food.pts.y[n]) + abs2(mouth_pos[3] .- food.pts.z[n]) < eps^2
+# 				push!(tmp, n)
+# 				food.num -= 1
+                
+# 				if fish.hunger > PARAMS.HUNGER_FAC_THRESH
+# 					fac = PARAMS.HUNGER_EAT_FAC_BASE * (2 - (fish.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 - PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
+# 				end
+
+# 				fish.hunger = max(0.0, fish.hunger - PARAMS.HUNGER_EAT_BASE * (fish.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
+
+# 				@async if TANK_STATE.sound
+# 					wavplay(SOUND_EAT, FS)
+# 				end
+#                 fish.combo += 1
+# 			end
+# 		end
+# 	end
+
+# 	if length(tmp) != 0
+# 		deleteat!(food.pts.x, tmp)
+# 		deleteat!(food.pts.y, tmp)
+# 		deleteat!(food.pts.z, tmp)
+# 		deleteat!(food.zd, tmp)
+# 	end
+# end
 
 function _create_landscape()
 	x = -0.05:0.11:1.05

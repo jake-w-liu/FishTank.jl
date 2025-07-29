@@ -107,7 +107,7 @@ end
 Check the hunger level of the fish.
 """
 function hunger()
-    return fish.hunger
+    return FISH.hunger
 end
 
 """
@@ -116,7 +116,7 @@ end
 Check if the fish is resting.
 """
 function resting()
-    return TANK_STATE.rest
+    return FISH.rest
 end
 
 """

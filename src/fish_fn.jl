@@ -4,18 +4,12 @@ mutable struct Fish
     pos::Vector{Float64}
     dir::Vector{Float64}
     hunger::Float64
+    rest::Bool
     target_food_idx::Union{Int, Nothing}
     combo::Int
 end
 
 function _create_fish(pos, color="", opc=0.9)
-
-    if color == ""
-        r = round(Int, rand() * 255)
-        g = round(Int, rand() * 255)
-        b = round(Int, rand() * 255)
-        color = "rgb($r, $g, $b)"
-    end
 
     a = 0.06
     b = 0.016
@@ -24,14 +18,14 @@ function _create_fish(pos, color="", opc=0.9)
     body = ellipsoids(pos, [a, b, c], color; opc=opc, tres=7, pres=16, ah=0)
     tail = polygons([[-0.2 * a, 0.0, 0.0] .+ pos, [-1.8 * a, 0.0, -1.5 * b] .+ pos, [-1.8 * a, 0.0, 1.5 * b] .+ pos], color; opc=opc * 0.7)
 
-    fish = Fish(body, tail, pos, [1.0, 0.0, 0.0], 0.55, nothing, 0)
+    fish = Fish(body, tail, pos, [1.0, 0.0, 0.0], 0.55, false, nothing, 0)
 
     return fish
 end
 
-function _update_fish!(fish, v, ang, zmax, rest)
+function _update_fish!(fish, v, ang, zmax)
 
-    if !rest
+    if !fish.rest
         axis = [fish.dir[2], -fish.dir[1], 0]
 
         grot!(fish.body, ang[1], axis, fish.pos)
