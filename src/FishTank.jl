@@ -24,8 +24,6 @@ const RESET_COUNT_THRESH = 8192
 
 # Simulation parameters struct
 mutable struct FishTankParams
-	INITIAL_FISH_VELOCITY::Float64
-    SINK_VELOCITY::Float64
 	FOOD_UPDATE_THRESH::Float64
 	EAT_DISTANCE::Float64
 	BLEND_FACTOR_ANG::Float64
@@ -47,8 +45,6 @@ end
 
 function default_params()
 	FishTankParams(
-		0.03,   # INITIAL_FISH_VELOCITY
-        0.02,   # SINK_VELOCITY
 		0.02,   # FOOD_UPDATE_THRESH
 		0.015,  # EAT_DISTANCE
 		0.14,   # BLEND_FACTOR_ANG
@@ -168,8 +164,11 @@ function main(color = "")
 	s1 = s2 = 1
 	factor = 0
 
+	v0 = 0.03
+	v_sink = 0.02
+
     ang = zeros(2)
-	v = fill(PARAMS.INITIAL_FISH_VELOCITY, 3)
+	v = fill(v0, 3)
 
 	while true
 		if TANK_STATE.sound
@@ -285,7 +284,7 @@ function main(color = "")
 					else
 						factor = maximum([FISH.pos[n], 1 - FISH.pos[n]])
 					end
-					v[n] = PARAMS.INITIAL_FISH_VELOCITY * factor
+					v[n] = v0 * factor
 
 					if n == 1 || n == 2
 						ang[2] *= 1.1 * sqrt((factor + 1)) # factor map to 1-2
@@ -330,7 +329,7 @@ function main(color = "")
 			_check_eat!()
 
 			if _check_food_update(TANK_STATE.food, PARAMS.FOOD_UPDATE_THRESH)
-				_update_food!(TANK_STATE.food, PARAMS.SINK_VELOCITY)
+				_update_food!(TANK_STATE.food, v_sink)
 			end
 
 			if length(fig.plot.data) - 5 < TANK_STATE.weedCount

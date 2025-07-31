@@ -1,7 +1,7 @@
 name = "FishTank"
 uuid = "b38b52d1-0eac-4161-8266-eab412337ac4"
 authors = ["Jake W. Liu"]
-version = "1.4.0"
+version = "1.5.0"
 
 [deps]
 BeepBeep = "97dd0070-d6c0-43ac-b134-ca84cdbd343e"
