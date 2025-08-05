@@ -11,7 +11,6 @@ using FFTW
 using LinearAlgebra
 using WAV
 
-
 include("fish_fn.jl")
 include("food_fn.jl")
 include("weed_fn.jl")
@@ -28,13 +27,13 @@ mutable struct FishTankParams
 	EAT_DISTANCE::Float64
 	BLEND_FACTOR_ANG::Float64
 	HUNGER_INC_MIN::Float64
-    HUNGER_INC_BASE::Float64
+	HUNGER_INC_BASE::Float64
 	HUNGER_INC_EXP::Float64
 	HUNGER_FOOD_THRESH::Float64
 	HUNGER_FAC_THRESH::Float64
 	HUNGER_EAT_FAC_EXP::Float64
 	HUNGER_EAT_MIN::Float64
-    HUNGER_EAT_BASE::Float64
+	HUNGER_EAT_BASE::Float64
 	COMBO_EXP::Float64
 	DOT_FRONT_THRESH::Float64
 	REST_PERIOD::Int
@@ -49,17 +48,17 @@ function default_params()
 		0.015,  # EAT_DISTANCE
 		0.14,   # BLEND_FACTOR_ANG
 		0.0001, # HUNGER_INC_MIN
-        0.0002, # HUNGER_INC_BASE
+		0.0002, # HUNGER_INC_BASE
 		1.8,    # HUNGER_INC_EXP
 		0.6,    # HUNGER_FOOD_THRESH
 		0.4,    # HUNGER_FAC_THRESH
 		2.3,    # HUNGER_EAT_FAC_EXP
 		0.02,   # HUNGER_EAT_MIN
-        0.05,   # HUNGER_EAT_BASE
+		0.05,   # HUNGER_EAT_BASE
 		2.1,    # COMBO_EXP
 		0.707,  # DOT_FRONT_THRESH
 		1024,   # REST_PERIOD
-		30,     # BUFFER_PERIOD
+		60,     # BUFFER_PERIOD
 		100,    # REST_COUNT_MAX
 		0.2,    # REST_DIR_THRESH
 	)
@@ -127,7 +126,7 @@ end
 
 function _initialize_fish(color)
 	pos = rand(3) .* 0.5 .+ 0.25
-	
+
 	fish = _create_fish(pos, color)
 	return fish, ang, v
 end
@@ -136,25 +135,24 @@ const FISH = _create_fish(rand(3) .* 0.5 .+ 0.25, "")
 
 function main(color = "")
 
-    # fish coloring
-    if color == ""
-        r = round(Int, rand() * 255)
-        g = round(Int, rand() * 255)
-        b = round(Int, rand() * 255)
-        color = "rgb($r, $g, $b)"
-    end
-    FISH.body.color = color
-    FISH.tail.color = color
+	# fish coloring
+	if color == ""
+		r = round(Int, rand() * 255)
+		g = round(Int, rand() * 255)
+		b = round(Int, rand() * 255)
+		color = "rgb($r, $g, $b)"
+	end
+	FISH.body.color = color
+	FISH.tail.color = color
 
 	# tank initialzation
 	tank, layout = _initialize_tank()
-    
+
 	zmax, landscape = _create_landscape()
 
 	world = [tank, FISH.body, FISH.tail, TANK_STATE.food.pts, landscape]
 	fig = plot(world, layout)
 	task_plot = @async display(fig)
-	sleep(0.1)
 
 	reset_count = 0
 	rest_count = 0
@@ -167,13 +165,15 @@ function main(color = "")
 	v0 = 0.03
 	v_sink = 0.02
 
-    ang = zeros(2)
+	ang = zeros(2)
 	v = fill(v0, 3)
+
+	wait(task_plot)
 
 	while true
 		if TANK_STATE.sound
-			sleep(2)
-			beep("facebook")
+			@async beep("facebook")
+			sleep(1)
 		end
 
 		while TANK_STATE.running
@@ -182,8 +182,6 @@ function main(color = "")
 				set_view!(fig, TANK_STATE.Az, TANK_STATE.El)
 				TANK_STATE.viewTrig = false
 			end
-
-			wait(task_plot)
 
 			# Increase hunger over time
 			if FISH.hunger < 1.0
@@ -197,7 +195,7 @@ function main(color = "")
 			if !FISH.rest
 				rest_count += 1
 
-				if rest_toggled 
+				if rest_toggled
 					buffer_count += 1
 					v .= v .* 1.08
 					if buffer_count >= PARAMS.BUFFER_PERIOD
@@ -205,14 +203,14 @@ function main(color = "")
 					end
 					rest_toggled = false
 				end
-                # change sign intertia
+				# change sign intertia
 
 				target_dir = FISH.dir # Default to current direction
 				if FISH.hunger > PARAMS.HUNGER_FOOD_THRESH && TANK_STATE.food.num > 0 # If hungry and food is available
 					# Find closest food particle
 					min_dist_sq = Inf
 					closest_food_idx = -1
-                    dot_th_v = PARAMS.DOT_FRONT_THRESH - PARAMS.DOT_FRONT_THRESH * (FISH.hunger -  PARAMS.HUNGER_FOOD_THRESH) / (1 -  PARAMS.HUNGER_FOOD_THRESH)  # Adjust threshold based on hunger
+					dot_th_v = PARAMS.DOT_FRONT_THRESH - PARAMS.DOT_FRONT_THRESH * (FISH.hunger - PARAMS.HUNGER_FOOD_THRESH) / (1 - PARAMS.HUNGER_FOOD_THRESH)  # Adjust threshold based on hunger
 					for i in eachindex(TANK_STATE.food.pts.x)
 						food_vec = [TANK_STATE.food.pts.x[i], TANK_STATE.food.pts.y[i], TANK_STATE.food.pts.z[i]] .- FISH.pos
 						if dot(food_vec ./ norm(food_vec), FISH.dir ./ norm(FISH.dir)) > dot_th_v # Check if food is in front of the fish
@@ -223,8 +221,6 @@ function main(color = "")
 							end
 						end
 					end
-
-					# println("ind: ", closest_food_idx)
 
 					if closest_food_idx != -1
 						food_pos = [TANK_STATE.food.pts.x[closest_food_idx], TANK_STATE.food.pts.y[closest_food_idx], TANK_STATE.food.pts.z[closest_food_idx]]
@@ -253,25 +249,21 @@ function main(color = "")
 						desired_ang1 = rad2deg(delta_pitch) # Corresponds to ang[1] (pitch)
 						desired_ang2 = rad2deg(delta_yaw) # Corresponds to ang[2] (yaw)
 
-
 						blend_factor_ang = PARAMS.BLEND_FACTOR_ANG  # How strongly to bias towards desired angles
 						ang[1] = (1 - blend_factor_ang) * (rand() * 1 * s1) + blend_factor_ang * desired_ang1
 						ang[2] = (1 - blend_factor_ang) * ((rand() * 1 + 1) * s2) + blend_factor_ang * desired_ang2
-
-						# ang[1] = (1 - blend_factor_ang) * rand() + blend_factor_ang * desired_ang1
-						# ang[2] = (1 - blend_factor_ang) * rand() + blend_factor_ang * desired_ang2
 					else
 						# If hungry but no food in target zone, use original random angles
-                        s1 = s1 * sign(rand(Normal(0.5, 0.5)))
-                        s2 = s2 * sign(rand(Normal(0.5, 0.5)))
+						s1 = s1 * sign(rand(Normal(0.5, 0.5)))
+						s2 = s2 * sign(rand(Normal(0.5, 0.5)))
 
 						ang[1] = rand() * 2 * s1
 						ang[2] = (rand() * 2 + 1) * s2
 					end
 				else
 					# If not hungry or no food, use original random angles
-                    s1 = s1 * sign(rand(Normal(0.5, 0.5)))
-                    s2 = s2 * sign(rand(Normal(0.5, 0.5)))
+					s1 = s1 * sign(rand(Normal(0.5, 0.5)))
+					s2 = s2 * sign(rand(Normal(0.5, 0.5)))
 
 					ang[1] = rand() * 2 * s1
 					ang[2] = (rand() * 2 + 1) * s2
@@ -322,7 +314,6 @@ function main(color = "")
 					sleep(0.1)
 				end
 			end
-			# println("Fish hunger: ", FISH.hunger)
 
 			_update_fish!(FISH, v, ang, zmax)
 
@@ -362,6 +353,7 @@ function main(color = "")
 			end
 
 			if TANK_STATE.plotTrig
+				close(fig)
 				fig = plot(world, layout)
 				display(fig)
 				sleep(1)
@@ -386,7 +378,7 @@ function _check_eat!()
 			if abs2(mouth_pos[1] - TANK_STATE.food.pts.x[n]) + abs2(mouth_pos[2] - TANK_STATE.food.pts.y[n]) + abs2(mouth_pos[3] .- TANK_STATE.food.pts.z[n]) < PARAMS.EAT_DISTANCE^2
 				push!(tmp, n)
 				TANK_STATE.food.num -= 1
-                
+
 				if FISH.hunger > PARAMS.HUNGER_FAC_THRESH
 					fac = (2 - (FISH.hunger - PARAMS.HUNGER_FAC_THRESH) / (1 - PARAMS.HUNGER_FAC_THRESH))^PARAMS.HUNGER_EAT_FAC_EXP
 				else
@@ -409,7 +401,7 @@ function _check_eat!()
 		deleteat!(TANK_STATE.food.pts.z, tmp)
 		deleteat!(TANK_STATE.food.zd, tmp)
 	end
-    return nothing
+	return nothing
 end
 
 function _create_landscape()
@@ -437,3 +429,4 @@ function _create_landscape()
 end
 
 end
+
