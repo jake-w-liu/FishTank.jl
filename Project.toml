@@ -1,6 +1,6 @@
 name = "FishTank"
 uuid = "b38b52d1-0eac-4161-8266-eab412337ac4"
-version = "1.5.2"
+version = "1.6.0"
 authors = ["Jake W. Liu"]
 
 [deps]
