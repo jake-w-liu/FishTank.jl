@@ -1,6 +1,6 @@
 module FishTank
 
-export init, pause, go, mute, unmute, check, feed, plant, replot, look, get_params, set_param!, hunger, resting
+export init, pause, go, mute, unmute, check, feed, plant, replot, look, get_params, set_param!, hunger, resting, reset!
 
 using PlotlyJS
 using PlotlyGeometries
@@ -77,10 +77,12 @@ mutable struct TankState
 	Az::Float64
 	El::Float64
 	viewTrig::Bool
+	main_task::Union{Task, Nothing}
+	fig::Union{Any, Nothing}
 end
 
 function TankState()
-	TankState(false, true, true, false, _create_food(0), Vector{Weed}(), 0, 28.0, 12.0, false)
+	TankState(false, true, true, false, _create_food(0), Vector{Weed}(), 0, 28.0, 12.0, false, nothing, nothing)
 end
 
 const TANK_STATE = TankState()
@@ -152,6 +154,7 @@ function main(color = "")
 
 	world = [tank, FISH.body, FISH.tail, TANK_STATE.food.pts, landscape]
 	fig = plot(world, layout)
+	TANK_STATE.fig = fig
 	task_plot = @async display(fig)
 
 	reset_count = 0
@@ -170,13 +173,21 @@ function main(color = "")
 
 	wait(task_plot)
 
+	# Store reference to current task for clean termination
+	my_task = current_task()
+
 	while true
+		# Exit if this task has been replaced by a new one
+		if TANK_STATE.main_task !== nothing && TANK_STATE.main_task !== my_task
+			break
+		end
+
 		if TANK_STATE.sound
 			@async beep("facebook")
 			sleep(1)
 		end
 
-		while TANK_STATE.running
+		while TANK_STATE.running && TANK_STATE.main_task === my_task
 
 			if TANK_STATE.viewTrig
 				set_view!(fig, TANK_STATE.Az, TANK_STATE.El)
@@ -385,7 +396,8 @@ function _check_eat!()
 					fac = 0.0
 				end
 
-				FISH.hunger = max(0.0, FISH.hunger - PARAMS.HUNGER_EAT_BASE * (FISH.combo)^(PARAMS.COMBO_EXP) * fac - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
+				h_R = FISH.rest ? 0.5 : 1.0
+				FISH.hunger = max(0.0, FISH.hunger - PARAMS.HUNGER_EAT_BASE * (FISH.combo)^(PARAMS.COMBO_EXP) * fac * h_R - PARAMS.HUNGER_EAT_MIN) # Reduce hunger when eating
 
 				@async if TANK_STATE.sound
 					wavplay(SOUND_EAT, FS)

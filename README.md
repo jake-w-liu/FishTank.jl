@@ -12,9 +12,11 @@
 
 - **Customized Fish Tank**: Set up your unique fish tank environment :boom:
 - **Interactive Fish Feeding**: Add fish feed and wait for your fish to eat them up :diamonds:
-- **Realistic Fish Behavior**: Fish can sleep occasionally, mimicking natural behavior :zzz:
+- **Realistic Fish Behavior**: Fish exhibit hunger-driven behavior, food seeking, and rest cycles :zzz:
 - **Decorate with Water Plants**: Enhance the tank with water plants for a more vibrant look :seedling:
 - **Random Landscape**: Landscape created with a random Gaussian surface (using [`FFTW.jl`](https://github.com/JuliaMath/FFTW.jl) under GPL license :exclamation:)
+- **Parameter Tuning**: Adjust simulation parameters to experiment with different behaviors :wrench:
+- **Easy Reset**: Reinitialize the tank within the same Julia session for rapid experimentation :recycle:
 
 ## Installation
 
@@ -46,7 +48,7 @@ plant() # randomly plant one waterweed bunble
 ```
 
 You can also set the az/el view angle by
-```julia 
+```julia
 look(0, 10) # az = 0 deg, el = 10 deg
 ```
 or even do some animations:
@@ -56,6 +58,17 @@ or even do some animations:
     look(n, 0)
     sleep(0.1)
 end
+```
+
+To experiment with different behaviors, adjust simulation parameters:
+```julia
+set_param!(:BLEND_FACTOR_ANG, 0.5)  # Make fish more deterministic in food pursuit
+set_param!(:REST_PERIOD, 512)        # Make fish rest more frequently
+```
+
+When you're done experimenting, reset everything to start fresh:
+```julia
+reset!()  # Reset with default parameters and a random colored fish
 ```
 
 Enjoy! :angel:
@@ -161,7 +174,23 @@ ___
 ```julia
 set_param!(name::Symbol, value)
 ```
-Set a parameter of the simulation. For example, to set the fish velocity to 0.05, use `set_param!(:INITIAL_FISH_VELOCITY, 0.05)`.
+Set a parameter of the simulation. For example, to change the rest period to 512 time steps, use `set_param!(:REST_PERIOD, 512)`. Available parameters include `BLEND_FACTOR_ANG`, `HUNGER_INC_EXP`, `REST_PERIOD`, and others (see `get_params()` for full list).
+
+___
+
+```julia
+reset!(color::String="")
+```
+Reset the fish tank to its initial state with all parameters restored to defaults. Closes the existing window and creates a fresh tank. Optionally specify a color for the new fish (e.g., `reset!("red")`). This is useful for starting fresh experiments without restarting Julia.
+
+**Example:**
+```julia
+init("blue")          # Start with blue fish
+set_param!(:REST_PERIOD, 512)  # Modify a parameter
+# ... do some experiments ...
+reset!("green")       # Reset everything with a green fish
+# All parameters are back to defaults
+```
 
 ___
 
