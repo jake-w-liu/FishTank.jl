@@ -25,7 +25,7 @@ MeshGrid = "1.0.2"
 PlotlyGeometries = "2.2.2"
 PlotlyJS = "0.18"
 WAV = "1.2.0"
-julia = "1.6.7"
+julia = "1.10"
 
 [extras]
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
